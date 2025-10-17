@@ -1,0 +1,58 @@
+# Azure Configuration
+azure_subscription_id = "30b2673d-e495-471b-ab8d-7dee974be9ae"  # Replace with your subscription ID
+
+# Resource Group Configuration
+resource_group_name = "juliahub-rg"
+location            = "eastus"
+
+# Tags for cost tracking
+tags = {
+  Environment = "test"
+  Project     = "juliahub"
+  CostCenter  = "engineering"
+  Owner       = "platform-team"
+}
+
+# Networking Configuration
+vnet_name                                 = "juliahub-vnet"
+vnet_address_space                        = ["10.0.0.0/16"]
+aks_subnet_address_prefixes               = ["10.0.1.0/24"]
+postgresql_subnet_address_prefixes        = ["10.0.2.0/24"]
+private_endpoints_subnet_address_prefixes = ["10.0.3.0/24"]
+
+# AKS Configuration
+aks_cluster_name       = "juliahub-aks"
+aks_dns_prefix         = "juliahub"
+kubernetes_version     = "1.33"
+aks_node_vm_size       = "Standard_D4s_v6"
+aks_initial_node_count = 3
+aks_min_node_count     = 3
+aks_max_node_count     = 10
+aks_os_disk_size_gb    = 128
+
+# PostgreSQL Configuration
+postgresql_server_name          = "juliahub-postgres"
+postgresql_administrator_login  = "psqladmin"
+postgresql_sku_name             = "B_Standard_B2s"
+postgresql_version              = "13"
+postgresql_storage_mb           = 32768
+postgresql_database_name        = "juliahub"
+postgresql_backup_retention_days = 30
+postgresql_extensions           = []
+
+# Azure Files Configuration
+# Note: Must be globally unique, 3-24 lowercase alphanumeric characters
+files_storage_account_name = "juliahubfiles"
+files_replication_type     = "LRS"
+file_share_names           = ["juliahub-config"]
+file_share_quota_gb        = 100
+
+# Azure Blob Storage Configuration
+# Note: Must be globally unique, 3-24 lowercase alphanumeric characters
+blob_storage_account_name           = "juliahubblob"
+blob_account_tier                   = "Standard"
+blob_replication_type               = "LRS"
+blob_container_names                = ["data", "backups"]
+blob_enable_versioning              = false
+blob_delete_retention_days          = 7
+blob_container_delete_retention_days = 7
