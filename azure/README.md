@@ -12,50 +12,50 @@ This Terraform project deploys a complete Azure infrastructure for hosting the J
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Resource Group                        │
+│                    Resource Group                       │
 ├─────────────────────────────────────────────────────────┤
-│                                                           │
+│                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │              Virtual Network (VNet)               │   │
-│  │                                                    │   │
-│  │  ┌─────────────┐  ┌──────────────┐  ┌──────────┐│   │
-│  │  │ AKS Subnet  │  │ PostgreSQL   │  │ Private  ││   │
-│  │  │             │  │ Subnet       │  │ Endpoints││   │
-│  │  │  (3-10      │  │              │  │ Subnet   ││   │
-│  │  │   nodes)    │  │  (Flexible   │  │          ││   │
-│  │  │             │  │   Server)    │  │ (Storage ││   │
-│  │  │             │  │              │  │  PE's)   ││   │
-│  │  └─────────────┘  └──────────────┘  └──────────┘│   │
-│  │                                                    │   │
-│  │  NSGs + Private DNS Zones                         │   │
+│  │              Virtual Network (VNet)              │   │
+│  │                                                  │   │
+│  │  ┌─────────────┐  ┌──────────────┐  ┌──────────┐ │   │
+│  │  │ AKS Subnet  │  │ PostgreSQL   │  │ Private  │ │   │
+│  │  │             │  │ Subnet       │  │ Endpoints│ │   │
+│  │  │  (3-10      │  │              │  │ Subnet   │ │   │
+│  │  │   nodes)    │  │  (Flexible   │  │          │ │   │
+│  │  │             │  │   Server)    │  │ (Storage │ │   │
+│  │  │             │  │              │  │  PE's)   │ │   │
+│  │  └─────────────┘  └──────────────┘  └──────────┘ │   │
+│  │                                                  │   │
+│  │  NSGs + Private DNS Zones                        │   │
 │  └──────────────────────────────────────────────────┘   │
-│                                                           │
+│                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │    AKS Cluster (Azure CNI Overlay)                │   │
+│  │    AKS Cluster (Azure CNI Overlay)               │   │
 │  │    • Standard_D4s_v6 nodes (4 vCPU, 16GB each)   │   │
-│  │    • Autoscaling: 3-10 nodes                      │   │
-│  │    • Azure Disk, File, Blob CSI drivers           │   │
-│  │    • Application Gateway for Containers           │   │
+│  │    • Autoscaling: 3-10 nodes                     │   │
+│  │    • Azure Disk, File, Blob CSI drivers          │   │
+│  │    • Application Gateway for Containers          │   │
 │  └──────────────────────────────────────────────────┘   │
-│                                                           │
+│                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │    PostgreSQL Flexible Server                     │   │
-│  │    • B_Standard_B2s (2 vCore)                     │   │
-│  │    • 32GB storage, 30-day backup retention        │   │
-│  │    • Private endpoint access only                 │   │
+│  │    PostgreSQL Flexible Server                    │   │
+│  │    • B_Standard_B2s (2 vCore)                    │   │
+│  │    • 32GB storage, 30-day backup retention       │   │
+│  │    • Private endpoint access only                │   │
 │  └──────────────────────────────────────────────────┘   │
-│                                                           │
+│                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │    Azure Files Premium                            │   │
-│  │    • 100GB juliahub-config share                  │   │
-│  │    • SMB protocol, private endpoint               │   │
+│  │    Azure Files Premium                           │   │
+│  │    • 100GB juliahub-config share                 │   │
+│  │    • SMB protocol, private endpoint              │   │
 │  └──────────────────────────────────────────────────┘   │
-│                                                           │
+│                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │    Azure Blob Storage                             │   │
-│  │    • Standard LRS                                 │   │
-│  │    • data, backups containers                     │   │
-│  │    • Private endpoint access                      │   │
+│  │    Azure Blob Storage                            │   │
+│  │    • Standard LRS                                │   │
+│  │    • data, backups containers                    │   │
+│  │    • Private endpoint access                     │   │
 │  └──────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────┘
 ```
