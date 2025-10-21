@@ -122,52 +122,31 @@ az aks get-credentials \
 kubectl get nodes
 ```
 
-### Apply Storage Classes
+### Apply needed via kubectl
 
 ```bash
-# Azure Disk storage classes
-terraform output -raw aks_storage_classes_yaml | kubectl apply -f -
-
 # Azure Files storage class
 terraform output -raw storage_files_kubernetes_storage_class_yaml | kubectl apply -f -
 
-# Azure Blob storage classes
-terraform output -raw storage_blob_kubernetes_storage_class_yaml | kubectl apply -f -
+kubectl create secret generic azure-files-secret \
+  --from-literal=azurestorageaccountname=$(terraform output -raw storage_files_account_name) \
+  --from-literal=azurestorageaccountkey=$(terraform output -raw storage_files_primary_access_key)
+
+terraform output -raw storage_files_kubernetes_pv_yaml | kubectl apply -f -
 ```
 
 ### Create Kubernetes Secrets
 
 #### PostgreSQL Connection
 
-```bash
-kubectl create secret generic postgresql-connection \
-  --from-literal=host=$(terraform output -raw postgresql_server_fqdn) \
-  --from-literal=port=5432 \
-  --from-literal=database=$(terraform output -raw postgresql_database_name) \
-  --from-literal=username=$(terraform output -raw postgresql_administrator_login) \
-  --from-literal=password=$(terraform output -raw postgresql_administrator_password)
-```
-
 #### Azure Files Credentials
 
 ```bash
-kubectl create secret generic azure-files-secret \
-  --from-literal=azurestorageaccountname=$(terraform output -raw storage_files_account_name) \
-  --from-literal=azurestorageaccountkey=$(terraform output -raw storage_files_primary_access_key)
-```
-
-#### Azure Blob Credentials
-
-```bash
-kubectl create secret generic azure-blob-secret \
-  --from-literal=azurestorageaccountname=$(terraform output -raw storage_blob_account_name) \
-  --from-literal=azurestorageaccountkey=$(terraform output -raw storage_blob_primary_access_key)
 ```
 
 ### Apply Persistent Volume for juliahub-config
 
 ```bash
-terraform output -raw storage_files_kubernetes_pv_yaml | kubectl apply -f -
 ```
 
 ## Module Structure
@@ -377,6 +356,20 @@ This example demonstrates how to deploy an nginx pod that uses the juliahub-conf
 Create a file called `nginx-example.yaml`:
 
 ```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: juliahub-config-pvc
+    namespace: default
+spec:
+    accessModes:
+    - ReadWriteMany
+    resources:
+    requests:
+        storage: 10Gi
+    storageClassName: azurefile-csi-premium-jh
+    volumeName: juliahub-config-pv
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:

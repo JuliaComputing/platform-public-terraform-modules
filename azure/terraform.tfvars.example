@@ -45,7 +45,7 @@ postgresql_extensions           = []
 files_storage_account_name = "juliahubfiles"
 files_replication_type     = "LRS"
 file_share_names           = ["juliahub-config"]
-file_share_quota_gb        = 100
+file_share_quota_gb        = 700
 
 # Azure Blob Storage Configuration
 # Note: Must be globally unique, 3-24 lowercase alphanumeric characters

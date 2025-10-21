@@ -36,11 +36,11 @@ output "private_endpoint_id" {
 
 output "kubernetes_storage_class_yaml" {
   description = "Kubernetes StorageClass YAML for Azure Files"
-  value = <<-EOT
+  value       = <<-EOT
     apiVersion: storage.k8s.io/v1
     kind: StorageClass
     metadata:
-      name: azure-file-premium
+      name: azurefile-csi-premium-jh
     provisioner: file.csi.azure.com
     parameters:
       skuName: Premium_LRS
@@ -53,9 +53,9 @@ output "kubernetes_storage_class_yaml" {
     mountOptions:
       - dir_mode=0777
       - file_mode=0777
-      - uid=0
-      - gid=0
-      - mfsymlinks
+      - uid=1000
+      - gid=1000
+      - mfsymlink
       - cache=strict
       - nosharesock
   EOT
@@ -63,7 +63,7 @@ output "kubernetes_storage_class_yaml" {
 
 output "kubernetes_secret_yaml" {
   description = "Kubernetes Secret YAML for Azure Files credentials"
-  value = <<-EOT
+  value       = <<-EOT
     apiVersion: v1
     kind: Secret
     metadata:
@@ -75,12 +75,12 @@ output "kubernetes_secret_yaml" {
       # azurestorageaccountkey should be set separately using kubectl or a secrets management solution
       # azurestorageaccountkey: <SET_THIS_VALUE>
   EOT
-  sensitive = true
+  sensitive   = true
 }
 
 output "kubernetes_pv_yaml" {
   description = "Kubernetes PersistentVolume YAML for juliahub-config file share"
-  value = <<-EOT
+  value       = <<-EOT
     apiVersion: v1
     kind: PersistentVolume
     metadata:
@@ -91,7 +91,7 @@ output "kubernetes_pv_yaml" {
       accessModes:
         - ReadWriteMany
       persistentVolumeReclaimPolicy: Retain
-      storageClassName: azure-file-premium
+      storageClassName: azurefile-csi-premium-jh
       csi:
         driver: file.csi.azure.com
         volumeHandle: juliahub-config-pv
@@ -106,24 +106,13 @@ output "kubernetes_pv_yaml" {
       mountOptions:
         - dir_mode=0777
         - file_mode=0777
-        - uid=0
-        - gid=0
+        - uid=1000
+        - gid=1000
         - mfsymlinks
-        - cache=strict
-        - nosharesock
+        - cache=strict # https://linux.die.net/man/8/mount.cifs
+        - nosharesock # reduce probability of reconnect race
+        - actimeo=30 # reduce latency for metadata-heavy workload
+        - nobrl # disable sending byte range lock requests to the server and for applications which have challenges with posix locks
     ---
-    apiVersion: v1
-    kind: PersistentVolumeClaim
-    metadata:
-      name: juliahub-config-pvc
-      namespace: default
-    spec:
-      accessModes:
-        - ReadWriteMany
-      resources:
-        requests:
-          storage: ${var.file_share_quota_gb}Gi
-      storageClassName: azure-file-premium
-      volumeName: juliahub-config-pv
   EOT
 }
