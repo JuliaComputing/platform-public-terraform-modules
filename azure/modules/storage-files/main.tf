@@ -25,7 +25,7 @@ resource "azurerm_storage_share" "shares" {
   name               = each.value
   storage_account_id = azurerm_storage_account.main.id
   quota              = var.file_share_quota_gb
-  enabled_protocol   = "SMB"
+  enabled_protocol   = "NFS"
   access_tier        = "Premium"
 }
 

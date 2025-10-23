@@ -34,6 +34,11 @@ output "private_endpoint_id" {
   value       = azurerm_private_endpoint.files.id
 }
 
+output "private_endpoint_ip" {
+  description = "Private IP address of the file storage endpoint"
+  value       = azurerm_private_endpoint.files.private_service_connection[0].private_ip_address
+}
+
 output "kubernetes_storage_class_yaml" {
   description = "Kubernetes StorageClass YAML for Azure Files"
   value       = <<-EOT
@@ -46,18 +51,18 @@ output "kubernetes_storage_class_yaml" {
       skuName: Premium_LRS
       storageAccount: ${azurerm_storage_account.main.name}
       resourceGroup: ${var.resource_group_name}
-      protocol: smb
+      protocol: nfs
+      networkEndpointType: privateEndpoint
+      encryptInTransit: "true"
     allowVolumeExpansion: true
     volumeBindingMode: Immediate
     reclaimPolicy: Retain
     mountOptions:
-      - dir_mode=0777
-      - file_mode=0777
-      - uid=1000
-      - gid=1000
-      - mfsymlink
-      - cache=strict
-      - nosharesock
+      - nconnect=4
+      - noresvport
+      - actimeo=30
+      - rsize=1048576
+      - wsize=1048576
   EOT
 }
 
@@ -99,20 +104,15 @@ output "kubernetes_pv_yaml" {
           resourceGroup: ${var.resource_group_name}
           storageAccount: ${azurerm_storage_account.main.name}
           shareName: juliahub-config
-          protocol: smb
-        nodeStageSecretRef:
-          name: azure-files-secret
-          namespace: default
+          protocol: nfs
+          server: ${azurerm_storage_account.main.name}.privatelink.file.core.windows.net
+          encryptInTransit: "true"
       mountOptions:
-        - dir_mode=0777
-        - file_mode=0777
-        - uid=1000
-        - gid=1000
-        - mfsymlinks
-        - cache=strict # https://linux.die.net/man/8/mount.cifs
-        - nosharesock # reduce probability of reconnect race
-        - actimeo=30 # reduce latency for metadata-heavy workload
-        - nobrl # disable sending byte range lock requests to the server and for applications which have challenges with posix locks
+        - nconnect=4
+        - noresvport
+        - actimeo=30
+        - rsize=1048576
+        - wsize=1048576
     ---
   EOT
 }
