@@ -23,6 +23,7 @@ variable "tags" {
 variable "vnet_name" {
   description = "Name of the Virtual Network"
   type        = string
+  default     = "juliahub-vnet"
 }
 
 variable "vnet_address_space" {
@@ -165,7 +166,7 @@ variable "file_share_names" {
 variable "file_share_quota_gb" {
   description = "Quota for each file share in GB"
   type        = number
-  default     = 100
+  default     = 700
 }
 
 # Azure Blob variables
