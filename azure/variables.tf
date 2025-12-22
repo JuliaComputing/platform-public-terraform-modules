@@ -139,8 +139,8 @@ variable "postgresql_backup_retention_days" {
   default     = 30
 }
 
-variable "postgresql_extensions" {
-  description = "List of PostgreSQL extensions to enable"
+variable "postgresql_additional_extensions" {
+  description = "Additional PostgreSQL extensions to enable (uuid-ossp is always included)"
   type        = list(string)
   default     = []
 }

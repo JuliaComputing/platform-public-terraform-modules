@@ -105,9 +105,9 @@ module "postgresql" {
   subnet_id           = module.networking.postgresql_subnet_id
   private_dns_zone_id = module.networking.postgres_private_dns_zone_id
 
-  database_name         = var.postgresql_database_name
-  backup_retention_days = var.postgresql_backup_retention_days
-  postgresql_extensions = var.postgresql_extensions
+  database_name                    = var.postgresql_database_name
+  backup_retention_days            = var.postgresql_backup_retention_days
+  postgresql_additional_extensions = var.postgresql_additional_extensions
 
   tags = local.common_tags
 

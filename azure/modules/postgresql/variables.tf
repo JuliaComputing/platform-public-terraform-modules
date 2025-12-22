@@ -83,8 +83,8 @@ variable "database_name" {
   default     = "juliahub"
 }
 
-variable "postgresql_extensions" {
-  description = "List of PostgreSQL extensions to enable"
+variable "postgresql_additional_extensions" {
+  description = "Additional PostgreSQL extensions to enable (uuid-ossp is always included)"
   type        = list(string)
   default     = []
 }

@@ -1,3 +1,8 @@
+locals {
+  required_extensions = ["uuid-ossp"]
+  all_extensions      = concat(local.required_extensions, var.postgresql_additional_extensions)
+}
+
 resource "azurerm_postgresql_flexible_server" "main" {
   name                = var.server_name
   location            = var.location
@@ -34,8 +39,7 @@ resource "azurerm_postgresql_flexible_server_database" "main" {
 }
 
 resource "azurerm_postgresql_flexible_server_configuration" "extensions" {
-  for_each  = toset(var.postgresql_extensions)
   name      = "azure.extensions"
   server_id = azurerm_postgresql_flexible_server.main.id
-  value     = each.value
+  value     = join(",", local.all_extensions)
 }
