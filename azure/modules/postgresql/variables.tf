@@ -84,7 +84,7 @@ variable "database_name" {
 }
 
 variable "postgresql_additional_extensions" {
-  description = "Additional PostgreSQL extensions to enable (uuid-ossp is always included)"
+  description = "Additional PostgreSQL extensions to enable (uuid-ossp and pg_trgm are always included)"
   type        = list(string)
   default     = []
 }
