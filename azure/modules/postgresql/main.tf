@@ -1,5 +1,5 @@
 locals {
-  required_extensions = ["uuid-ossp", "pg_trgm"]
+  required_extensions = ["uuid-ossp", "pg_trgm", "pgcrypto"]
   all_extensions      = concat(local.required_extensions, var.postgresql_additional_extensions)
 }
 

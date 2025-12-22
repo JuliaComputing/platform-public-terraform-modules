@@ -38,7 +38,7 @@ postgresql_version              = "13"
 postgresql_storage_mb           = 32768
 postgresql_database_name        = "juliahub"
 postgresql_backup_retention_days = 30
-postgresql_additional_extensions = []  # uuid-ossp and pg_trgm are always included
+postgresql_additional_extensions = []  # uuid-ossp, pg_trgm, and pgcrypto are always included
 
 # Azure Files Configuration
 # Note: Must be globally unique, 3-24 lowercase alphanumeric characters
