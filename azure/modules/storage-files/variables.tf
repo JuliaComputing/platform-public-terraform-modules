@@ -32,7 +32,7 @@ variable "replication_type" {
 variable "file_share_names" {
   description = "List of file share names to create"
   type        = list(string)
-  default     = ["juliahub-config"]
+  default     = ["juliahub-config", "juliahub-userdata"]
 }
 
 variable "file_share_quota_gb" {
