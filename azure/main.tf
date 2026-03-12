@@ -78,6 +78,8 @@ module "aks" {
   max_node_count     = var.aks_max_node_count
   os_disk_size_gb    = var.aks_os_disk_size_gb
 
+  additional_node_pools = var.aks_additional_node_pools
+
   tags = local.common_tags
 
   depends_on = [module.networking]

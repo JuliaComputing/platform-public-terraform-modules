@@ -76,6 +76,28 @@ variable "dns_service_ip" {
   default     = "10.1.0.10"
 }
 
+variable "additional_node_pools" {
+  description = "Map of additional node pools to create alongside the default system pool"
+  type = map(object({
+    vm_size            = string
+    min_count          = optional(number, 1)
+    max_count          = optional(number, 10)
+    initial_node_count = optional(number, 1)
+    os_disk_size_gb    = optional(number, 128)
+    node_labels        = optional(map(string), {})
+    node_taints        = optional(list(string), [])
+    mode               = optional(string, "User")
+  }))
+  default = {
+    large = {
+      vm_size = "Standard_D8s_v6"
+    }
+    xlarge = {
+      vm_size = "Standard_D16s_v6"
+    }
+  }
+}
+
 variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)
