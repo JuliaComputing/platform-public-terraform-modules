@@ -86,8 +86,9 @@ module "aks" {
 }
 
 resource "random_password" "postgresql" {
-  length  = 32
-  special = true
+  length           = 32
+  special          = true
+  override_special = "-_.~"
 }
 
 module "postgresql" {
