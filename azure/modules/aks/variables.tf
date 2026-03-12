@@ -80,9 +80,9 @@ variable "additional_node_pools" {
   description = "Map of additional node pools to create alongside the default system pool"
   type = map(object({
     vm_size            = string
-    min_count          = optional(number, 1)
+    min_count          = optional(number, 0)
     max_count          = optional(number, 10)
-    initial_node_count = optional(number, 1)
+    initial_node_count = optional(number, 0)
     os_disk_size_gb    = optional(number, 128)
     node_labels        = optional(map(string), {})
     node_taints        = optional(list(string), [])
