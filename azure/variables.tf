@@ -97,6 +97,28 @@ variable "aks_os_disk_size_gb" {
   default     = 128
 }
 
+variable "aks_additional_node_pools" {
+  description = "Map of additional node pools to create alongside the default system pool. Each key is the pool name (max 12 chars)."
+  type = map(object({
+    vm_size            = string
+    min_count          = optional(number, 1)
+    max_count          = optional(number, 10)
+    initial_node_count = optional(number, 1)
+    os_disk_size_gb    = optional(number, 128)
+    node_labels        = optional(map(string), {})
+    node_taints        = optional(list(string), [])
+    mode               = optional(string, "User")
+  }))
+  default = {
+    large = {
+      vm_size = "Standard_D8s_v6"
+    }
+    xlarge = {
+      vm_size = "Standard_D16s_v6"
+    }
+  }
+}
+
 # PostgreSQL variables
 variable "postgresql_server_name" {
   description = "Name of the PostgreSQL Flexible Server"
@@ -160,7 +182,7 @@ variable "files_replication_type" {
 variable "file_share_names" {
   description = "List of file share names to create"
   type        = list(string)
-  default     = ["juliahub-config"]
+  default     = ["juliahub-config", "juliahub-userdata"]
 }
 
 variable "file_share_quota_gb" {

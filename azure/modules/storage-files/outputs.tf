@@ -84,12 +84,12 @@ output "kubernetes_secret_yaml" {
 }
 
 output "kubernetes_pv_yaml" {
-  description = "Kubernetes PersistentVolume YAML for juliahub-config file share"
-  value       = <<-EOT
+  description = "Kubernetes PersistentVolume YAML for all file shares"
+  value = join("\n", [for share_name in var.file_share_names : <<-EOT
     apiVersion: v1
     kind: PersistentVolume
     metadata:
-      name: juliahub-config-pv
+      name: ${share_name}-pv
     spec:
       capacity:
         storage: ${var.file_share_quota_gb}Gi
@@ -99,11 +99,11 @@ output "kubernetes_pv_yaml" {
       storageClassName: azurefile-csi-premium-jh
       csi:
         driver: file.csi.azure.com
-        volumeHandle: juliahub-config-pv
+        volumeHandle: ${share_name}-pv
         volumeAttributes:
           resourceGroup: ${var.resource_group_name}
           storageAccount: ${azurerm_storage_account.main.name}
-          shareName: juliahub-config
+          shareName: ${share_name}
           protocol: nfs
           server: ${azurerm_storage_account.main.name}.privatelink.file.core.windows.net
           encryptInTransit: "true"
@@ -115,4 +115,5 @@ output "kubernetes_pv_yaml" {
         - wsize=1048576
     ---
   EOT
+  ])
 }

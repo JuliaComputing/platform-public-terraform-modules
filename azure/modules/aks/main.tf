@@ -54,6 +54,35 @@ resource "azurerm_kubernetes_cluster" "main" {
   }
 }
 
+resource "azurerm_kubernetes_cluster_node_pool" "additional" {
+  for_each = var.additional_node_pools
+
+  name                  = each.key
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.main.id
+  vm_size               = each.value.vm_size
+  vnet_subnet_id        = var.subnet_id
+  auto_scaling_enabled  = true
+  min_count             = each.value.min_count
+  max_count             = each.value.max_count
+  node_count            = each.value.initial_node_count
+  os_disk_size_gb       = each.value.os_disk_size_gb
+  node_labels           = each.value.node_labels
+  node_taints           = each.value.node_taints
+  mode                  = each.value.mode
+
+  upgrade_settings {
+    max_surge = "10%"
+  }
+
+  tags = var.tags
+
+  lifecycle {
+    ignore_changes = [
+      node_count
+    ]
+  }
+}
+
 # Role assignment for AKS to manage network resources
 resource "azurerm_role_assignment" "aks_network" {
   scope                = var.vnet_id
