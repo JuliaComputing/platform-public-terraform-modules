@@ -83,37 +83,7 @@ output "kubernetes_secret_yaml" {
   sensitive   = true
 }
 
-output "kubernetes_pv_yaml" {
-  description = "Kubernetes PersistentVolume YAML for all file shares"
-  value = join("\n", [for share_name in var.file_share_names : <<-EOT
-    apiVersion: v1
-    kind: PersistentVolume
-    metadata:
-      name: ${share_name}-pv
-    spec:
-      capacity:
-        storage: ${var.file_share_quota_gb}Gi
-      accessModes:
-        - ReadWriteMany
-      persistentVolumeReclaimPolicy: Retain
-      storageClassName: azurefile-csi-premium-jh
-      csi:
-        driver: file.csi.azure.com
-        volumeHandle: ${share_name}-pv
-        volumeAttributes:
-          resourceGroup: ${var.resource_group_name}
-          storageAccount: ${azurerm_storage_account.main.name}
-          shareName: ${share_name}
-          protocol: nfs
-          server: ${azurerm_storage_account.main.name}.privatelink.file.core.windows.net
-          encryptInTransit: "true"
-      mountOptions:
-        - nconnect=4
-        - noresvport
-        - actimeo=30
-        - rsize=1048576
-        - wsize=1048576
-    ---
-  EOT
-  ])
+output "storage_account_server" {
+  description = "Private link server address for the storage account"
+  value       = "${azurerm_storage_account.main.name}.privatelink.file.core.windows.net"
 }

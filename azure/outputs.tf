@@ -135,9 +135,9 @@ output "storage_files_kubernetes_secret_yaml" {
   sensitive   = true
 }
 
-output "storage_files_kubernetes_pv_yaml" {
-  description = "Kubernetes PersistentVolume YAML for Azure Files"
-  value       = module.storage_files.kubernetes_pv_yaml
+output "storage_files_server" {
+  description = "Private link server address for the Azure Files storage account"
+  value       = module.storage_files.storage_account_server
 }
 
 # Azure Blob outputs
