@@ -1,0 +1,66 @@
+# AWS Configuration
+region = "us-east-1"
+
+# Cluster name. Also used to name the VPC and its subnets.
+cluster_name = "juliahub"
+
+# Tags for cost tracking and ownership
+tags = {
+  Environment = "production"
+  Project     = "juliahub"
+  Owner       = "platform-team"
+}
+
+# Networking Configuration
+vpc_cidr             = "192.168.0.0/16"
+public_subnet_cidrs  = ["192.168.0.0/18", "192.168.64.0/18"]
+private_subnet_cidrs = ["192.168.128.0/18", "192.168.192.0/18"]
+availability_zones   = ["us-east-1a", "us-east-1c"]
+
+# VPC endpoints. ECR and S3 keep image pulls and object access off the NAT
+# gateway. Enable the RDS endpoint if your database is reached over PrivateLink.
+enable_ecr_vpc_endpoint     = true
+enable_s3_vpc_endpoint      = true
+enable_rds_vpc_endpoint     = false
+enable_bedrock_vpc_endpoint = false
+
+# Cluster Configuration
+kubernetes_version = "1.33"
+service_ipv4_cidr  = "10.100.0.0/16" # must not overlap vpc_cidr
+
+# Restrict this to your own egress ranges in production.
+endpoint_public_access       = true
+endpoint_public_access_cidrs = ["0.0.0.0/0"]
+
+# Additional IAM principals granted cluster admin. The principal running
+# terraform apply is granted admin automatically.
+access_entries = [
+  # {
+  #   principal_arn = "arn:aws:iam::111122223333:role/PlatformAdmin"
+  #   username      = "PlatformAdmin"
+  # },
+]
+
+# Node Group Configuration
+# These nodes run the platform components and cluster addons. Job nodes are
+# provisioned separately by an autoscaler such as Karpenter.
+node_instance_type      = "t3.large"
+bootstrap_type          = "BOTTLEROCKET"
+node_group_desired_size = 2
+node_group_min_size     = 2
+node_group_max_size     = 10
+node_volume_size        = 100
+
+# Karpenter provisions job nodes. Supply its node role ARN so those nodes can
+# join the cluster, and leave the discovery tag enabled.
+additional_node_role_arns      = []
+enable_karpenter_discovery_tag = true
+
+# Addons. Empty version strings select the latest version compatible with
+# kubernetes_version. The EFS CSI driver is required by the platform.
+enable_efs_csi_driver = true
+# cni_version         = ""
+# coredns_version     = ""
+# kube_proxy_version  = ""
+# ebs_csi_version     = ""
+# efs_csi_version     = ""
