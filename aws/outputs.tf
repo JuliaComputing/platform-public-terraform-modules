@@ -56,6 +56,27 @@ output "node_role_arn" {
   value       = module.eks.node_role_arn
 }
 
+# Shared filesystem outputs
+output "config_directory_efs_filesystem_id" {
+  description = "EFS filesystem ID for the config directory. Maps to configDirectory.efs.filesystemId."
+  value       = one(module.efs_config[*].filesystem_id)
+}
+
+output "config_directory_efs_access_point_id" {
+  description = "EFS access point ID for the config directory. Maps to configDirectory.efs.accessPointId."
+  value       = one(module.efs_config[*].access_point_id)
+}
+
+output "userdata_directory_efs_filesystem_id" {
+  description = "EFS filesystem ID for per-user job storage. Maps to compute.userdataDirectory.efs.filesystemId."
+  value       = one(module.efs_userdata[*].filesystem_id)
+}
+
+output "userdata_directory_efs_access_point_id" {
+  description = "EFS access point ID for per-user job storage. Maps to compute.userdataDirectory.efs.accessPointId, which is required for this directory."
+  value       = one(module.efs_userdata[*].access_point_id)
+}
+
 # Database outputs
 output "postgres_host" {
   description = "RDS hostname, or null when create_rds is false. Maps to the platform's postgres.host Helm value."
@@ -95,8 +116,13 @@ output "datasets_role_arn" {
 }
 
 output "jobs_role_arn" {
-  description = "ARN of the role jobs assume for log and secret access"
+  description = "ARN of the role jobs assume for log and secret access. Maps to compute.cloudhost.aws.roleArn."
   value       = one(module.compute[*].jobs_role_arn)
+}
+
+output "cloudhost_max_session_duration" {
+  description = "Maximum STS session duration on the jobs role. Must match compute.cloudhost.aws.maxSessionDuration."
+  value       = one(module.compute[*].jobs_role_max_session_duration)
 }
 
 output "job_outputs_role_arn" {

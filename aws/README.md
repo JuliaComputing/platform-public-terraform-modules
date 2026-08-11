@@ -14,15 +14,15 @@ This is a self-contained root module. Apply it, point `kubectl` at the resulting
 | Node group | A small "critical" node group for platform components and addons |
 | Addons | `vpc-cni`, `coredns`, `kube-proxy`, `aws-ebs-csi-driver`, `aws-efs-csi-driver`, each with its own IRSA role |
 | PostgreSQL | An encrypted RDS instance, reachable only from the cluster |
+| Shared filesystems | Two EFS filesystems with access points, for the config directory and per-user job storage |
 | Compute resources | Datasets S3 bucket, audit and job log groups with S3 archives, and the IAM roles the platform assumes to run jobs |
 
-The database and compute pieces can be turned off with `create_rds = false` and `create_compute = false` if you manage them yourself.
+Each of these can be turned off — `create_rds`, `create_efs_config_directory`, `create_efs_userdata_directory`, `create_compute` — if you manage them yourself.
 
 ## What this does not create
 
 These are outside the scope of this module and must be provisioned separately:
 
-- **EFS filesystem and access points** — the platform stores its config and userdata directories on EFS. The CSI driver is installed here, but the filesystem is not created.
 - **An autoscaler** — the node group here runs platform components only. Job nodes need Karpenter or Cluster Autoscaler.
 - **ALB, ACM certificate, and Route 53 records** — for ingress and TLS.
 - **AWS Load Balancer Controller.**
@@ -32,17 +32,45 @@ See the [AWS installation guide](https://help.juliahub.com/juliahub/stable/insta
 
 ## Mapping outputs to Helm values
 
+After `terraform apply`, these outputs populate a `myvalues.yaml`:
+
 | Output | Helm value |
 |--------|-----------|
-| `postgres_host` | `postgres.host` |
-| `postgres_port` | `postgres.port` |
-| `postgres_username` | `postgres.username` |
-| `postgres_password` | `postgres.password` |
+| `postgres_host` | `postgres.external.host` |
+| `postgres_port` | `postgres.external.port` |
+| `postgres_username` | `postgres.external.username` |
+| `postgres_password` | `postgres.external.password` |
+| `config_directory_efs_filesystem_id` | `configDirectory.efs.filesystemId` |
+| `config_directory_efs_access_point_id` | `configDirectory.efs.accessPointId` |
+| `userdata_directory_efs_filesystem_id` | `compute.userdataDirectory.efs.filesystemId` |
+| `userdata_directory_efs_access_point_id` | `compute.userdataDirectory.efs.accessPointId` |
 | `compute_service_account_role_arn` | `serviceAccount.annotations["eks.amazonaws.com/role-arn"]` |
 | `datasets_bucket_name` | `compute.storage.aws.bucketName` |
 | `datasets_role_arn` | `compute.storage.aws.storageRoleArn` |
+| `jobs_role_arn` | `compute.cloudhost.aws.roleArn` |
+| `cloudhost_max_session_duration` | `compute.cloudhost.aws.maxSessionDuration` |
+| `region` (your `region` input) | `compute.cloudhost.aws.region` |
 
-The platform also needs `postgres.type: external` and `postgres.requiresSSL: true`.
+Alongside these, set the type discriminators the chart needs:
+
+```yaml
+postgres:
+  type: external
+  external:
+    requiresSSL: true
+
+configDirectory:
+  type: efs
+  efs:
+    useIAM: true   # the filesystem policy restricts mounts to the node role
+
+compute:
+  enabled: true
+  userdataDirectory:
+    type: efs
+```
+
+`compute.enabled` is gated by your Replicated license — check entitlement with JuliaHub support before setting it.
 
 ## Prerequisites
 
@@ -158,6 +186,7 @@ additional_interface_vpc_endpoints = {
 | [modules/vpc](modules/vpc/) | VPC, subnets, routing, NAT gateways, VPC endpoints |
 | [modules/eks](modules/eks/) | EKS cluster, node group, addons, IAM roles, access entries |
 | [modules/rds](modules/rds/) | PostgreSQL RDS instance, parameter group, optional alarms |
+| [modules/efs](modules/efs/) | EFS filesystem, access point, and mount targets for one shared directory |
 | [modules/compute](modules/compute/) | Datasets bucket, log groups and archives, compute IAM roles |
 
 Each can be consumed independently — for instance, `modules/compute` against a cluster you already run, or `modules/eks` with a database you manage elsewhere.

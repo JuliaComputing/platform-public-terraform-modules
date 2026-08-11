@@ -120,6 +120,51 @@ module "rds" {
   tags = local.common_tags
 }
 
+module "efs_config" {
+  source = "./modules/efs"
+  count  = var.create_efs_config_directory ? 1 : 0
+
+  name    = var.cluster_name
+  purpose = "config"
+
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnet_ids
+
+  # Only workloads in the cluster mount the filesystem.
+  allow_from_security_group_ids = [module.eks.cluster_security_group_id]
+  # The CSI node daemonset mounts under the node identity.
+  restrict_mount_to_role_arns = concat([module.eks.node_role_arn], var.additional_efs_mount_role_arns)
+
+  # The config directory is read continually, so IA tiering costs more than it saves.
+  transition_to_ia     = "none"
+  enable_backup_policy = var.efs_config_directory_backup
+
+  alarm_sns_topic_arns = var.alarm_sns_topic_arns
+
+  tags = local.common_tags
+}
+
+module "efs_userdata" {
+  source = "./modules/efs"
+  count  = var.create_efs_userdata_directory ? 1 : 0
+
+  name    = var.cluster_name
+  purpose = "userdata"
+
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnet_ids
+
+  allow_from_security_group_ids = [module.eks.cluster_security_group_id]
+  restrict_mount_to_role_arns   = concat([module.eks.node_role_arn], var.additional_efs_mount_role_arns)
+
+  transition_to_ia     = var.efs_userdata_transition_to_ia
+  enable_backup_policy = var.efs_userdata_backup
+
+  alarm_sns_topic_arns = var.alarm_sns_topic_arns
+
+  tags = local.common_tags
+}
+
 module "compute" {
   source = "./modules/compute"
   count  = var.create_compute ? 1 : 0

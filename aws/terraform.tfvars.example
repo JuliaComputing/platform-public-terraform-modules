@@ -65,6 +65,22 @@ enable_efs_csi_driver = true
 # ebs_csi_version     = ""
 # efs_csi_version     = ""
 
+# Shared Filesystem Configuration
+# The platform config directory must be ReadWriteMany, which on AWS means EFS.
+# Userdata backs per-user job storage. Both are mounted by the node role, so if
+# Karpenter provisions job nodes, add its node role to additional_efs_mount_role_arns
+# or job pods will fail to mount.
+create_efs_config_directory   = true
+efs_config_directory_backup   = true
+create_efs_userdata_directory = true
+efs_userdata_backup           = false
+
+# The config directory is read continually, so IA tiering is disabled for it and
+# not configurable here. Userdata is colder and does benefit.
+efs_userdata_transition_to_ia = "AFTER_14_DAYS"
+
+# additional_efs_mount_role_arns = ["arn:aws:iam::111122223333:role/KarpenterNodeRole"]
+
 # Database Configuration
 # The instance is placed in the private subnets and only the cluster security
 # group is allowed to reach it. Set create_rds = false to use your own database.

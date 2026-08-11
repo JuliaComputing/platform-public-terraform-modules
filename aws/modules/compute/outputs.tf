@@ -9,8 +9,13 @@ output "service_account_role_name" {
 }
 
 output "jobs_role_arn" {
-  description = "ARN of the role jobs assume for log and secret access"
+  description = "ARN of the role jobs assume for log and secret access. Maps to the platform's compute.cloudhost.aws.roleArn Helm value."
   value       = aws_iam_role.jobs.arn
+}
+
+output "jobs_role_max_session_duration" {
+  description = "Maximum STS session duration for the jobs role. Must match the platform's compute.cloudhost.aws.maxSessionDuration Helm value."
+  value       = aws_iam_role.jobs.max_session_duration
 }
 
 output "datasets_role_arn" {

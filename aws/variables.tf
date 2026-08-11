@@ -268,6 +268,44 @@ variable "enable_efs_csi_driver" {
   default     = true
 }
 
+# --- Shared filesystems -----------------------------------------------------
+
+variable "create_efs_config_directory" {
+  description = "Whether to create the EFS filesystem backing the platform config directory. The platform requires a ReadWriteMany volume here, which on AWS means EFS."
+  type        = bool
+  default     = true
+}
+
+variable "efs_config_directory_backup" {
+  description = "Whether to enable AWS Backup on the config directory filesystem. It holds platform state, so backups are recommended."
+  type        = bool
+  default     = true
+}
+
+variable "create_efs_userdata_directory" {
+  description = "Whether to create the EFS filesystem backing per-user job storage. Required for jobs with persistent storage."
+  type        = bool
+  default     = true
+}
+
+variable "efs_userdata_transition_to_ia" {
+  description = "When userdata files move to Infrequent Access storage. Set to \"none\" to keep everything in Standard."
+  type        = string
+  default     = "AFTER_14_DAYS"
+}
+
+variable "efs_userdata_backup" {
+  description = "Whether to enable AWS Backup on the userdata filesystem"
+  type        = bool
+  default     = false
+}
+
+variable "additional_efs_mount_role_arns" {
+  description = "Additional IAM role ARNs permitted to mount the EFS filesystems, beyond the cluster node role. Pass the Karpenter node role when job nodes are provisioned by Karpenter, since the CSI daemonset mounts under the node identity."
+  type        = list(string)
+  default     = []
+}
+
 # --- Database ---------------------------------------------------------------
 
 variable "create_rds" {
