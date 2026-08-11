@@ -268,6 +268,65 @@ variable "enable_efs_csi_driver" {
   default     = true
 }
 
+# --- Cluster controllers ----------------------------------------------------
+
+variable "create_karpenter_iam" {
+  description = <<-EOT
+    Whether to create the IAM roles, instance profile, and interruption queue
+    Karpenter needs.
+
+    Karpenter itself is installed by Helm from the upstream chart; AWS
+    publishes no EKS managed add-on for it. This creates only the AWS-side
+    resources that chart expects. Job nodes are provisioned by an autoscaler,
+    so leave this enabled unless you run a different one.
+  EOT
+  type        = bool
+  default     = true
+}
+
+variable "karpenter_namespace" {
+  description = "Namespace Karpenter is installed into"
+  type        = string
+  default     = "kube-system"
+}
+
+variable "karpenter_service_account_name" {
+  description = "Name of the Karpenter controller service account"
+  type        = string
+  default     = "karpenter"
+}
+
+variable "karpenter_interruption_queue" {
+  description = "Whether to create the SQS queue and EventBridge rules that let Karpenter drain nodes ahead of spot interruption and scheduled maintenance"
+  type        = bool
+  default     = true
+}
+
+variable "create_alb_controller_iam" {
+  description = <<-EOT
+    Whether to create the IRSA role for the AWS Load Balancer Controller.
+
+    The controller itself is installed by Helm from the upstream chart; AWS
+    publishes no EKS managed add-on for it. This creates only the IAM role that
+    chart's service account annotates. Required if you expose the platform
+    through an ALB Ingress.
+  EOT
+  type        = bool
+  default     = true
+}
+
+variable "alb_controller_namespace" {
+  description = "Namespace the AWS Load Balancer Controller is installed into"
+  type        = string
+  default     = "kube-system"
+}
+
+variable "alb_controller_service_account_name" {
+  description = "Name of the AWS Load Balancer Controller service account"
+  type        = string
+  default     = "aws-load-balancer-controller"
+}
+
 # --- Shared filesystems -----------------------------------------------------
 
 variable "create_efs_config_directory" {

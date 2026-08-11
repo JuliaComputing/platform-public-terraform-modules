@@ -56,6 +56,32 @@ output "node_role_arn" {
   value       = module.eks.node_role_arn
 }
 
+# Controller outputs
+output "karpenter_controller_role_arn" {
+  description = "Karpenter controller IRSA role ARN. Set as serviceAccount.annotations[\"eks.amazonaws.com/role-arn\"] on the Karpenter chart."
+  value       = one(module.karpenter[*].controller_role_arn)
+}
+
+output "karpenter_node_role_name" {
+  description = "Karpenter node role name. Goes in the EC2NodeClass role field."
+  value       = one(module.karpenter[*].node_role_name)
+}
+
+output "karpenter_node_role_arn" {
+  description = "Karpenter node role ARN. Already wired into the cluster access entries and the EFS mount policy by this module."
+  value       = one(module.karpenter[*].node_role_arn)
+}
+
+output "karpenter_interruption_queue_name" {
+  description = "Karpenter interruption queue name. Set as the chart's settings.interruptionQueue value."
+  value       = one(module.karpenter[*].interruption_queue_name)
+}
+
+output "alb_controller_role_arn" {
+  description = "AWS Load Balancer Controller IRSA role ARN. Set as serviceAccount.annotations[\"eks.amazonaws.com/role-arn\"] on that chart."
+  value       = one(module.alb_controller[*].iam_role_arn)
+}
+
 # Shared filesystem outputs
 output "config_directory_efs_filesystem_id" {
   description = "EFS filesystem ID for the config directory. Maps to configDirectory.efs.filesystemId."

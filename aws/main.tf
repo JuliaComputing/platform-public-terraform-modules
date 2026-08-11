@@ -65,7 +65,10 @@ module "eks" {
   endpoint_public_access_cidrs = var.endpoint_public_access_cidrs
   authentication_mode          = var.authentication_mode
 
-  access_entries            = var.access_entries
+  access_entries = var.access_entries
+  # Karpenter nodes need an access entry to register with the cluster. The role
+  # is created by the karpenter module below, so it is passed as a variable
+  # rather than a module reference to avoid a dependency cycle.
   additional_node_role_arns = var.additional_node_role_arns
 
   node_instance_type      = var.node_instance_type
@@ -120,6 +123,42 @@ module "rds" {
   tags = local.common_tags
 }
 
+module "karpenter" {
+  source = "./modules/karpenter"
+  count  = var.create_karpenter_iam ? 1 : 0
+
+  cluster_name         = module.eks.cluster_name
+  namespace            = var.karpenter_namespace
+  service_account_name = var.karpenter_service_account_name
+
+  create_interruption_queue = var.karpenter_interruption_queue
+
+  tags = local.common_tags
+}
+
+module "alb_controller" {
+  source = "./modules/alb-controller"
+  count  = var.create_alb_controller_iam ? 1 : 0
+
+  cluster_name         = module.eks.cluster_name
+  namespace            = var.alb_controller_namespace
+  service_account_name = var.alb_controller_service_account_name
+
+  tags = local.common_tags
+}
+
+locals {
+  # Karpenter-provisioned nodes must be able to join the cluster and mount EFS,
+  # both of which key off the node role rather than any pod identity.
+  karpenter_node_role_arns = var.create_karpenter_iam ? [module.karpenter[0].node_role_arn] : []
+
+  efs_mount_role_arns = concat(
+    [module.eks.node_role_arn],
+    local.karpenter_node_role_arns,
+    var.additional_efs_mount_role_arns,
+  )
+}
+
 module "efs_config" {
   source = "./modules/efs"
   count  = var.create_efs_config_directory ? 1 : 0
@@ -133,7 +172,7 @@ module "efs_config" {
   # Only workloads in the cluster mount the filesystem.
   allow_from_security_group_ids = [module.eks.cluster_security_group_id]
   # The CSI node daemonset mounts under the node identity.
-  restrict_mount_to_role_arns = concat([module.eks.node_role_arn], var.additional_efs_mount_role_arns)
+  restrict_mount_to_role_arns = local.efs_mount_role_arns
 
   # The config directory is read continually, so IA tiering costs more than it saves.
   transition_to_ia     = "none"
@@ -155,7 +194,7 @@ module "efs_userdata" {
   subnet_ids = module.vpc.private_subnet_ids
 
   allow_from_security_group_ids = [module.eks.cluster_security_group_id]
-  restrict_mount_to_role_arns   = concat([module.eks.node_role_arn], var.additional_efs_mount_role_arns)
+  restrict_mount_to_role_arns   = local.efs_mount_role_arns
 
   transition_to_ia     = var.efs_userdata_transition_to_ia
   enable_backup_policy = var.efs_userdata_backup

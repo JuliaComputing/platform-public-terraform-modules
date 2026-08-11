@@ -1,8 +1,8 @@
 # JuliaHub Platform on AWS
 
-Terraform for the AWS infrastructure a self-managed JuliaHub Platform install needs: a VPC and an EKS cluster configured to match what the platform Helm chart expects.
+Terraform for the AWS infrastructure a self-managed JuliaHub Platform install needs: a VPC, an EKS cluster, a database, shared filesystems, and the IAM the platform and its cluster controllers assume — all configured to match what the platform Helm chart expects.
 
-This is a self-contained root module. Apply it, point `kubectl` at the resulting cluster, then install the platform chart.
+This is a self-contained root module. Apply it, point `kubectl` at the resulting cluster, install the Karpenter and load balancer controller charts, then install the platform chart.
 
 ## What this creates
 
@@ -15,17 +15,24 @@ This is a self-contained root module. Apply it, point `kubectl` at the resulting
 | Addons | `vpc-cni`, `coredns`, `kube-proxy`, `aws-ebs-csi-driver`, `aws-efs-csi-driver`, each with its own IRSA role |
 | PostgreSQL | An encrypted RDS instance, reachable only from the cluster |
 | Shared filesystems | Two EFS filesystems with access points, for the config directory and per-user job storage |
+| Karpenter IAM | Controller and node roles, instance profile, and the interruption queue for graceful spot handling |
+| Load balancer IAM | IRSA role for the AWS Load Balancer Controller |
 | Compute resources | Datasets S3 bucket, audit and job log groups with S3 archives, and the IAM roles the platform assumes to run jobs |
 
-Each of these can be turned off — `create_rds`, `create_efs_config_directory`, `create_efs_userdata_directory`, `create_compute` — if you manage them yourself.
+Each of these can be turned off — `create_rds`, `create_efs_config_directory`, `create_efs_userdata_directory`, `create_compute`, `create_karpenter_iam`, `create_alb_controller_iam` — if you manage them yourself.
+
+### Controllers are IAM-only
+
+AWS publishes **no EKS managed add-on** for either Karpenter or the AWS Load Balancer Controller. The managed add-on catalog covers the CNI, CoreDNS, kube-proxy, the CSI drivers, and a set of AWS and partner agents; both of these are installed by Helm from their upstream charts instead.
+
+So this module creates their AWS-side resources — IAM roles, Karpenter's instance profile and interruption queue — and leaves the in-cluster install to Helm. The two module READMEs carry the matching `helm install` invocations. Everything the charts need from AWS, including the subnet and security group discovery tags Karpenter selects on, is already wired up here.
 
 ## What this does not create
 
 These are outside the scope of this module and must be provisioned separately:
 
-- **An autoscaler** — the node group here runs platform components only. Job nodes need Karpenter or Cluster Autoscaler.
-- **ALB, ACM certificate, and Route 53 records** — for ingress and TLS.
-- **AWS Load Balancer Controller.**
+- **The Karpenter and load balancer controller installs themselves** — their IAM is created here, but the charts are yours to deploy. See above.
+- **ACM certificates and Route 53 records** — for ingress and TLS. The ALB itself is created by the load balancer controller in response to the platform's Ingress.
 - **Object scanning** — the datasets bucket has hooks for wiring up a scanner of your own; see [modules/compute](modules/compute/).
 
 See the [AWS installation guide](https://help.juliahub.com/juliahub/stable/installation/) for how these map to Helm values.
@@ -50,6 +57,15 @@ After `terraform apply`, these outputs populate a `myvalues.yaml`:
 | `jobs_role_arn` | `compute.cloudhost.aws.roleArn` |
 | `cloudhost_max_session_duration` | `compute.cloudhost.aws.maxSessionDuration` |
 | `region` (your `region` input) | `compute.cloudhost.aws.region` |
+
+Controller outputs go to their own Helm charts rather than the platform chart:
+
+| Output | Used by |
+|--------|---------|
+| `karpenter_controller_role_arn` | Karpenter chart, `serviceAccount.annotations` |
+| `karpenter_interruption_queue_name` | Karpenter chart, `settings.interruptionQueue` |
+| `karpenter_node_role_name` | Your `EC2NodeClass` `role` field |
+| `alb_controller_role_arn` | Load balancer controller chart, `serviceAccount.annotations` |
 
 Alongside these, set the type discriminators the chart needs:
 
@@ -126,10 +142,10 @@ access_entries = [
 ]
 ```
 
-If you run Karpenter, pass its node role through `additional_node_role_arns` so nodes it launches can join:
+Nodes need an access entry too. The node group's role and, when `create_karpenter_iam` is enabled, the Karpenter node role are both registered automatically. Use `additional_node_role_arns` only for node roles created outside this module:
 
 ```hcl
-additional_node_role_arns = ["arn:aws:iam::111122223333:role/KarpenterNodeRole"]
+additional_node_role_arns = ["arn:aws:iam::111122223333:role/OtherNodeRole"]
 ```
 
 ## IRSA
@@ -187,6 +203,8 @@ additional_interface_vpc_endpoints = {
 | [modules/eks](modules/eks/) | EKS cluster, node group, addons, IAM roles, access entries |
 | [modules/rds](modules/rds/) | PostgreSQL RDS instance, parameter group, optional alarms |
 | [modules/efs](modules/efs/) | EFS filesystem, access point, and mount targets for one shared directory |
+| [modules/karpenter](modules/karpenter/) | Karpenter IAM roles, instance profile, interruption queue |
+| [modules/alb-controller](modules/alb-controller/) | IRSA role for the AWS Load Balancer Controller |
 | [modules/compute](modules/compute/) | Datasets bucket, log groups and archives, compute IAM roles |
 
 Each can be consumed independently — for instance, `modules/compute` against a cluster you already run, or `modules/eks` with a database you manage elsewhere.

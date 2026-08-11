@@ -51,10 +51,21 @@ node_group_min_size     = 2
 node_group_max_size     = 10
 node_volume_size        = 100
 
-# Karpenter provisions job nodes. Supply its node role ARN so those nodes can
-# join the cluster, and leave the discovery tag enabled.
+# Node roles created outside this module that also need cluster access. The
+# node group role and the Karpenter node role are registered automatically.
 additional_node_role_arns      = []
 enable_karpenter_discovery_tag = true
+
+# Cluster Controllers
+# Neither Karpenter nor the AWS Load Balancer Controller is available as an EKS
+# managed add-on, so this creates their IAM only; install the charts with Helm.
+# See modules/karpenter/README.md and modules/alb-controller/README.md.
+create_karpenter_iam         = true
+karpenter_namespace          = "kube-system"
+karpenter_interruption_queue = true
+
+create_alb_controller_iam = true
+alb_controller_namespace  = "kube-system"
 
 # Addons. Empty version strings select the latest version compatible with
 # kubernetes_version. The EFS CSI driver is required by the platform.
@@ -67,9 +78,8 @@ enable_efs_csi_driver = true
 
 # Shared Filesystem Configuration
 # The platform config directory must be ReadWriteMany, which on AWS means EFS.
-# Userdata backs per-user job storage. Both are mounted by the node role, so if
-# Karpenter provisions job nodes, add its node role to additional_efs_mount_role_arns
-# or job pods will fail to mount.
+# Userdata backs per-user job storage. Both are mounted under the node identity;
+# the node group and Karpenter node roles are granted automatically.
 create_efs_config_directory   = true
 efs_config_directory_backup   = true
 create_efs_userdata_directory = true
@@ -79,7 +89,8 @@ efs_userdata_backup           = false
 # not configurable here. Userdata is colder and does benefit.
 efs_userdata_transition_to_ia = "AFTER_14_DAYS"
 
-# additional_efs_mount_role_arns = ["arn:aws:iam::111122223333:role/KarpenterNodeRole"]
+# Only needed for node roles created outside this module.
+# additional_efs_mount_role_arns = ["arn:aws:iam::111122223333:role/OtherNodeRole"]
 
 # Database Configuration
 # The instance is placed in the private subnets and only the cluster security

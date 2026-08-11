@@ -7,9 +7,9 @@ Reusable Terraform modules for deploying the [JuliaHub](https://juliahub.com) pl
 | Cloud | Module | Description |
 |-------|--------|-------------|
 | Azure | [azure/](azure/) | Complete Azure infrastructure: AKS, PostgreSQL, Azure Files, Blob Storage, networking |
-| AWS | [aws/](aws/) | Complete AWS infrastructure: EKS, VPC, RDS PostgreSQL, S3, compute IAM roles |
+| AWS | [aws/](aws/) | Complete AWS infrastructure: EKS, VPC, RDS PostgreSQL, EFS, S3, and IAM for the platform, Karpenter, and the load balancer controller |
 
-Both modules provision a cluster, a database, and object storage. EFS and ingress are still provisioned separately on AWS — see [aws/README.md](aws/README.md) for the list and how each maps to a Helm value.
+Both modules provision a cluster, a database, and shared storage. On AWS the cluster controllers (Karpenter, the load balancer controller) have no EKS managed add-on, so their IAM is created but the charts are installed with Helm — see [aws/README.md](aws/README.md) for what is left to you and how each output maps to a Helm value.
 
 ## Usage
 
