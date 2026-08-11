@@ -267,3 +267,167 @@ variable "enable_efs_csi_driver" {
   type        = bool
   default     = true
 }
+
+# --- Database ---------------------------------------------------------------
+
+variable "create_rds" {
+  description = "Whether to create a PostgreSQL RDS instance for the platform. Set false to use a database you manage separately."
+  type        = bool
+  default     = true
+}
+
+variable "rds_identifier" {
+  description = "Identifier for the RDS instance. Defaults to cluster_name."
+  type        = string
+  default     = ""
+}
+
+variable "postgresql_version" {
+  description = "PostgreSQL major version"
+  type        = string
+  default     = "16"
+}
+
+variable "rds_instance_class" {
+  description = "RDS instance class"
+  type        = string
+  default     = "db.m7g.large"
+}
+
+variable "rds_database_name" {
+  description = "Name of a database to create on the instance. Leave empty to use the default postgres database."
+  type        = string
+  default     = ""
+}
+
+variable "rds_allocated_storage" {
+  description = "Initial RDS storage in GB"
+  type        = number
+  default     = 20
+}
+
+variable "rds_max_allocated_storage" {
+  description = "Upper bound in GB for RDS storage autoscaling"
+  type        = number
+  default     = 1000
+}
+
+variable "rds_multi_az" {
+  description = "Whether to run an RDS standby in a second availability zone"
+  type        = bool
+  default     = false
+}
+
+variable "rds_backup_retention_period" {
+  description = "Days to retain automated RDS backups"
+  type        = number
+  default     = 30
+}
+
+variable "rds_deletion_protection" {
+  description = "Whether RDS deletion protection is enabled"
+  type        = bool
+  default     = true
+}
+
+variable "rds_skip_final_snapshot" {
+  description = "Whether to skip the final RDS snapshot on destroy"
+  type        = bool
+  default     = false
+}
+
+variable "rds_snapshot_identifier" {
+  description = "RDS snapshot identifier to restore from. Leave empty to create a fresh instance."
+  type        = string
+  default     = ""
+}
+
+variable "alarm_sns_topic_arns" {
+  description = "SNS topic ARNs notified by the RDS CloudWatch alarms. Leaving this empty creates no alarms."
+  type        = list(string)
+  default     = []
+}
+
+# --- Compute (jobs, datasets, logs) -----------------------------------------
+
+variable "create_compute" {
+  description = "Whether to create the compute IAM roles, datasets bucket, and log groups the platform needs to run jobs"
+  type        = bool
+  default     = true
+}
+
+variable "compute_name" {
+  description = "Name identifying this install, used to name compute IAM roles and derive bucket names. Defaults to cluster_name; a domain such as juliahub.example.com is typical."
+  type        = string
+  default     = ""
+}
+
+variable "service_account_namespace" {
+  description = "Kubernetes namespace the platform is deployed into. Used as the IRSA trust subject."
+  type        = string
+  default     = "juliahub"
+}
+
+variable "service_account_names" {
+  description = "Service accounts in the platform namespace permitted to assume the compute IRSA role"
+  type        = list(string)
+  default     = ["juliahub-platform", "juliarun"]
+}
+
+variable "datasets_bucket_name" {
+  description = "Name of the datasets bucket. Leave empty to derive it from compute_name."
+  type        = string
+  default     = ""
+}
+
+variable "allowed_origins" {
+  description = "Origins permitted to upload directly to the datasets bucket via CORS, without the scheme. Must include the platform hostname. Defaults to compute_name."
+  type        = list(string)
+  default     = []
+}
+
+variable "force_destroy_datasets_bucket" {
+  description = "Whether terraform destroy may delete the datasets bucket while it still holds objects. This destroys data."
+  type        = bool
+  default     = false
+}
+
+variable "datasets_bucket_notifications" {
+  description = "SQS queues notified on object creation in the datasets bucket, keyed by short name. Use this to hook up object scanning."
+  type = map(object({
+    queue_arn     = string
+    events        = optional(list(string), ["s3:ObjectCreated:*"])
+    filter_prefix = optional(string, null)
+  }))
+  default = {}
+}
+
+variable "additional_datasets_bucket_policy_statements" {
+  description = "Additional JSON-encoded IAM policy statements merged into the datasets bucket policy"
+  type        = list(string)
+  default     = []
+}
+
+variable "create_logging" {
+  description = "Whether to create the audit and job log groups and their S3 archive buckets"
+  type        = bool
+  default     = true
+}
+
+variable "audit_log_retention_days" {
+  description = "Retention in days for the audit log group"
+  type        = number
+  default     = 30
+}
+
+variable "job_log_retention_days" {
+  description = "Retention in days for the job log group"
+  type        = number
+  default     = 7
+}
+
+variable "additional_trusted_role_arns" {
+  description = "Additional IAM role ARNs permitted to assume the jobs and datasets roles"
+  type        = list(string)
+  default     = []
+}

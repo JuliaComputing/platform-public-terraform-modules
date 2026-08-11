@@ -92,3 +92,56 @@ module "eks" {
 
   tags = local.common_tags
 }
+
+module "rds" {
+  source = "./modules/rds"
+  count  = var.create_rds ? 1 : 0
+
+  identifier         = var.rds_identifier == "" ? var.cluster_name : var.rds_identifier
+  postgresql_version = var.postgresql_version
+  instance_class     = var.rds_instance_class
+  database_name      = var.rds_database_name
+
+  allocated_storage     = var.rds_allocated_storage
+  max_allocated_storage = var.rds_max_allocated_storage
+  multi_az              = var.rds_multi_az
+
+  subnet_ids = module.vpc.private_subnet_ids
+  # Only workloads in the cluster reach the database.
+  allow_from_security_group_ids = [module.eks.cluster_security_group_id]
+
+  backup_retention_period = var.rds_backup_retention_period
+  deletion_protection     = var.rds_deletion_protection
+  skip_final_snapshot     = var.rds_skip_final_snapshot
+  snapshot_identifier     = var.rds_snapshot_identifier
+
+  alarm_sns_topic_arns = var.alarm_sns_topic_arns
+
+  tags = local.common_tags
+}
+
+module "compute" {
+  source = "./modules/compute"
+  count  = var.create_compute ? 1 : 0
+
+  name         = var.compute_name == "" ? var.cluster_name : var.compute_name
+  cluster_name = module.eks.cluster_name
+
+  service_account_namespace = var.service_account_namespace
+  service_account_names     = var.service_account_names
+
+  datasets_bucket_name          = var.datasets_bucket_name
+  allowed_origins               = var.allowed_origins
+  force_destroy_datasets_bucket = var.force_destroy_datasets_bucket
+
+  datasets_bucket_notifications                = var.datasets_bucket_notifications
+  additional_datasets_bucket_policy_statements = var.additional_datasets_bucket_policy_statements
+
+  create_logging           = var.create_logging
+  audit_log_retention_days = var.audit_log_retention_days
+  job_log_retention_days   = var.job_log_retention_days
+
+  additional_trusted_role_arns = var.additional_trusted_role_arns
+
+  tags = local.common_tags
+}

@@ -64,3 +64,44 @@ enable_efs_csi_driver = true
 # kube_proxy_version  = ""
 # ebs_csi_version     = ""
 # efs_csi_version     = ""
+
+# Database Configuration
+# The instance is placed in the private subnets and only the cluster security
+# group is allowed to reach it. Set create_rds = false to use your own database.
+create_rds                  = true
+postgresql_version          = "16"
+rds_instance_class          = "db.m7g.large"
+rds_allocated_storage       = 20
+rds_max_allocated_storage   = 1000
+rds_multi_az                = false
+rds_backup_retention_period = 30
+rds_deletion_protection     = true
+
+# SNS topics notified by the RDS alarms. Empty means no alarms are created.
+alarm_sns_topic_arns = []
+
+# Compute Configuration
+# Datasets bucket, log groups, and the IAM roles the platform uses to run jobs.
+create_compute = true
+
+# Identifies the install. Names the IAM roles and derives bucket names, and is
+# the default CORS origin for direct dataset uploads, so it should be the
+# hostname users load the platform from.
+compute_name = "juliahub.example.com"
+
+# Kubernetes namespace the platform is installed into. Used as the IRSA subject.
+service_account_namespace = "juliahub"
+
+# Override if the platform is served from a different hostname than compute_name.
+# allowed_origins = ["juliahub.example.com"]
+
+create_logging           = true
+audit_log_retention_days = 30
+job_log_retention_days   = 7
+
+# This module does not scan uploaded objects. To wire up your own scanner, send
+# object-created events to its queue and grant it bucket access:
+# datasets_bucket_notifications = {
+#   "scanner" = { queue_arn = "arn:aws:sqs:us-east-1:111122223333:object-scan" }
+# }
+# additional_datasets_bucket_policy_statements = []

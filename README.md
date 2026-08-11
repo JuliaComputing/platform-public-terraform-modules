@@ -7,9 +7,9 @@ Reusable Terraform modules for deploying the [JuliaHub](https://juliahub.com) pl
 | Cloud | Module | Description |
 |-------|--------|-------------|
 | Azure | [azure/](azure/) | Complete Azure infrastructure: AKS, PostgreSQL, Azure Files, Blob Storage, networking |
-| AWS | [aws/](aws/) | EKS cluster and VPC, with addons and IRSA roles |
+| AWS | [aws/](aws/) | Complete AWS infrastructure: EKS, VPC, RDS PostgreSQL, S3, compute IAM roles |
 
-The two modules differ in scope. The Azure module provisions the full stack, including the database and storage. The AWS module covers the VPC and EKS cluster; EFS, PostgreSQL, S3, and ingress are provisioned separately — see [aws/README.md](aws/README.md) for the list and how each maps to a Helm value.
+Both modules provision a cluster, a database, and object storage. EFS and ingress are still provisioned separately on AWS — see [aws/README.md](aws/README.md) for the list and how each maps to a Helm value.
 
 ## Usage
 

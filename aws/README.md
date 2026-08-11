@@ -13,19 +13,36 @@ This is a self-contained root module. Apply it, point `kubectl` at the resulting
 | EKS cluster | Control plane with API-based access entries, OIDC provider for IRSA |
 | Node group | A small "critical" node group for platform components and addons |
 | Addons | `vpc-cni`, `coredns`, `kube-proxy`, `aws-ebs-csi-driver`, `aws-efs-csi-driver`, each with its own IRSA role |
+| PostgreSQL | An encrypted RDS instance, reachable only from the cluster |
+| Compute resources | Datasets S3 bucket, audit and job log groups with S3 archives, and the IAM roles the platform assumes to run jobs |
+
+The database and compute pieces can be turned off with `create_rds = false` and `create_compute = false` if you manage them yourself.
 
 ## What this does not create
 
 These are outside the scope of this module and must be provisioned separately:
 
 - **EFS filesystem and access points** — the platform stores its config and userdata directories on EFS. The CSI driver is installed here, but the filesystem is not created.
-- **PostgreSQL** — use RDS or another external PostgreSQL.
-- **S3 bucket and IAM roles for compute** — for job data and job outputs.
 - **An autoscaler** — the node group here runs platform components only. Job nodes need Karpenter or Cluster Autoscaler.
 - **ALB, ACM certificate, and Route 53 records** — for ingress and TLS.
 - **AWS Load Balancer Controller.**
+- **Object scanning** — the datasets bucket has hooks for wiring up a scanner of your own; see [modules/compute](modules/compute/).
 
 See the [AWS installation guide](https://help.juliahub.com/juliahub/stable/installation/) for how these map to Helm values.
+
+## Mapping outputs to Helm values
+
+| Output | Helm value |
+|--------|-----------|
+| `postgres_host` | `postgres.host` |
+| `postgres_port` | `postgres.port` |
+| `postgres_username` | `postgres.username` |
+| `postgres_password` | `postgres.password` |
+| `compute_service_account_role_arn` | `serviceAccount.annotations["eks.amazonaws.com/role-arn"]` |
+| `datasets_bucket_name` | `compute.storage.aws.bucketName` |
+| `datasets_role_arn` | `compute.storage.aws.storageRoleArn` |
+
+The platform also needs `postgres.type: external` and `postgres.requiresSSL: true`.
 
 ## Prerequisites
 
@@ -140,8 +157,10 @@ additional_interface_vpc_endpoints = {
 |--------|-------------|
 | [modules/vpc](modules/vpc/) | VPC, subnets, routing, NAT gateways, VPC endpoints |
 | [modules/eks](modules/eks/) | EKS cluster, node group, addons, IAM roles, access entries |
+| [modules/rds](modules/rds/) | PostgreSQL RDS instance, parameter group, optional alarms |
+| [modules/compute](modules/compute/) | Datasets bucket, log groups and archives, compute IAM roles |
 
-Both can be consumed independently if you already have a VPC.
+Each can be consumed independently — for instance, `modules/compute` against a cluster you already run, or `modules/eks` with a database you manage elsewhere.
 
 ## Inputs
 
