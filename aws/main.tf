@@ -182,7 +182,7 @@ module "efs_config" {
   # Only workloads in the cluster mount the filesystem.
   allow_from_security_group_ids = [module.eks.cluster_security_group_id]
   # The CSI node daemonset mounts under the node identity.
-  restrict_mount_to_role_arns = local.efs_mount_role_arns
+  restrict_mount_to_role_arns = var.restrict_efs_mounts_to_node_roles ? local.efs_mount_role_arns : []
 
   # The config directory is read continually, so IA tiering costs more than it saves.
   transition_to_ia     = "none"
@@ -204,7 +204,7 @@ module "efs_userdata" {
   subnet_ids = module.vpc.private_subnet_ids
 
   allow_from_security_group_ids = [module.eks.cluster_security_group_id]
-  restrict_mount_to_role_arns   = local.efs_mount_role_arns
+  restrict_mount_to_role_arns   = var.restrict_efs_mounts_to_node_roles ? local.efs_mount_role_arns : []
 
   transition_to_ia     = var.efs_userdata_transition_to_ia
   enable_backup_policy = var.efs_userdata_backup

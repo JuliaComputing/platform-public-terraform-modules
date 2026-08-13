@@ -383,6 +383,29 @@ variable "efs_userdata_backup" {
   default     = false
 }
 
+variable "restrict_efs_mounts_to_node_roles" {
+  description = <<-EOT
+    Whether to attach an EFS filesystem policy restricting mounts to the
+    cluster node roles.
+
+    Off by default. Attaching any policy removes the EFS default, which grants
+    access to any client that can reach a mount target, so every mount must
+    then authenticate. That requires the `iam` mount option on every EFS
+    PersistentVolume, including the per-job volumes the platform creates
+    dynamically. Enable this only once you have confirmed the platform version
+    in use sets that option everywhere; otherwise mounts fail with
+    `access denied by server`.
+
+    Note that IAM principal conditions are not enforced for NFS mounts at all.
+    EFS honours only aws:SecureTransport, aws:SourceIp,
+    elasticfilesystem:AccessPointArn, and
+    elasticfilesystem:AccessedViaMountTarget. Network access is already scoped
+    by the mount target security groups, which is the primary control.
+  EOT
+  type        = bool
+  default     = false
+}
+
 variable "additional_efs_mount_role_arns" {
   description = "Additional IAM role ARNs permitted to mount the EFS filesystems, beyond the cluster node role. Pass the Karpenter node role when job nodes are provisioned by Karpenter, since the CSI daemonset mounts under the node identity."
   type        = list(string)
