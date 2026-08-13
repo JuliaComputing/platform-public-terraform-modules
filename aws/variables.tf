@@ -505,6 +505,12 @@ variable "additional_datasets_bucket_policy_statements" {
   default     = []
 }
 
+variable "force_destroy_log_buckets" {
+  description = "Whether terraform destroy may delete the log archive buckets while they still hold objects"
+  type        = bool
+  default     = false
+}
+
 variable "create_logging" {
   description = "Whether to create the audit and job log groups and their S3 archive buckets"
   type        = bool

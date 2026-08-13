@@ -221,9 +221,10 @@ module "compute" {
   datasets_bucket_notifications                = var.datasets_bucket_notifications
   additional_datasets_bucket_policy_statements = var.additional_datasets_bucket_policy_statements
 
-  create_logging           = var.create_logging
-  audit_log_retention_days = var.audit_log_retention_days
-  job_log_retention_days   = var.job_log_retention_days
+  create_logging            = var.create_logging
+  force_destroy_log_buckets = var.force_destroy_log_buckets
+  audit_log_retention_days  = var.audit_log_retention_days
+  job_log_retention_days    = var.job_log_retention_days
 
   additional_trusted_role_arns = var.additional_trusted_role_arns
 
