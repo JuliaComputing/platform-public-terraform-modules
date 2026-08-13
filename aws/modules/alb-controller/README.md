@@ -14,6 +14,8 @@ helm repo add eks https://aws.github.io/eks-charts
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   --namespace kube-system \
   --set clusterName=<cluster_name> \
+  --set region=<region> \
+  --set vpcId=<vpc_id> \
   --set serviceAccount.create=true \
   --set serviceAccount.name=aws-load-balancer-controller \
   --set-string serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=<iam_role_arn>
@@ -30,6 +32,14 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
 >
 > Until an autoscaler provisions untainted nodes, the tainted node group is the
 > only place these pods can run.
+
+> **Pass `region` and `vpcId` explicitly.** Left unset the controller discovers
+> them from EC2 instance metadata, which fails on these nodes: the launch
+> template sets an IMDS hop limit of 1, so a pod cannot reach the metadata
+> service. The controller then crash-loops with
+> `failed to get VPC ID ... context deadline exceeded`. Take the values from the
+> root module's `region` input and `vpc_id` output rather than raising the hop
+> limit, which would expose node credentials to every pod.
 
 The controller also needs the subnet tags the `vpc` module already applies: `kubernetes.io/role/elb` on public subnets and `kubernetes.io/role/internal-elb` on private ones.
 
