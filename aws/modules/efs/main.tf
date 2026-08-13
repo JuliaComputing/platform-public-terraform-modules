@@ -36,6 +36,19 @@ locals {
   tiering_enabled = var.transition_to_ia != "none"
   restrict_mount  = length(var.restrict_mount_to_role_arns) > 0
 
+  # A mount authenticates as an STS session, so aws:PrincipalArn is the
+  # assumed-role form (arn:aws:sts::<acct>:assumed-role/<role>/<session>)
+  # rather than the iam role arn the caller passes. Comparing against the role
+  # arn alone never matches, so the deny below would fire against the very
+  # roles the allow permits. Both forms are matched, with a wildcard for the
+  # session name.
+  mount_principal_arn_patterns = flatten([
+    for arn in var.restrict_mount_to_role_arns : [
+      arn,
+      "${replace(replace(arn, ":iam::", ":sts::"), ":role/", ":assumed-role/")}/*",
+    ]
+  ])
+
   # At most one mount target per availability zone is permitted. The AZ of each
   # subnet is only known after apply, so rather than deduplicating here (which
   # would make the resource count unknown at plan time) a mount target is
@@ -198,9 +211,9 @@ data "aws_iam_policy_document" "filesystem" {
     resources = [aws_efs_file_system._.arn]
 
     condition {
-      test     = "ArnNotEquals"
+      test     = "ArnNotLike"
       variable = "aws:PrincipalArn"
-      values   = var.restrict_mount_to_role_arns
+      values   = local.mount_principal_arn_patterns
     }
   }
 
