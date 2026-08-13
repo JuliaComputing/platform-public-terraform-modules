@@ -327,6 +327,24 @@ variable "alb_controller_service_account_name" {
   default     = "aws-load-balancer-controller"
 }
 
+# --- TLS --------------------------------------------------------------------
+
+variable "certificate_arn" {
+  description = <<-EOT
+    ARN of the ACM certificate the load balancer terminates TLS with.
+
+    Supply one you already have, from an ACM import, an internal CA, or a
+    certificate issued out of band. When your parent zone is in Route 53 you can
+    instead create one with modules/acm-certificate and pass its output here.
+
+    Surfaced as the alb_ingress_certificate_arn output, which goes on the
+    platform chart's websrvr ingress annotation. Leaving it empty means the ALB
+    has no certificate and serves HTTP only.
+  EOT
+  type        = string
+  default     = ""
+}
+
 # --- Shared filesystems -----------------------------------------------------
 
 variable "create_efs_config_directory" {

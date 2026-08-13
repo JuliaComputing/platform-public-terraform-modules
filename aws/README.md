@@ -32,7 +32,8 @@ So this module creates their AWS-side resources — IAM roles, Karpenter's insta
 These are outside the scope of this module and must be provisioned separately:
 
 - **The Karpenter and load balancer controller installs themselves** — their IAM is created here, but the charts are yours to deploy. See above.
-- **ACM certificates and Route 53 records** — for ingress and TLS. The ALB itself is created by the load balancer controller in response to the platform's Ingress.
+- **Route 53 records pointing at the ALB** — the load balancer only exists after the platform install, so its hostname is CNAME'd afterwards.
+- **A TLS certificate**, unless you use the optional [modules/acm-certificate](modules/acm-certificate/). See below.
 - **Object scanning** — the datasets bucket has hooks for wiring up a scanner of your own; see [modules/compute](modules/compute/).
 
 See the [AWS installation guide](https://help.juliahub.com/juliahub/stable/installation/) for how these map to Helm values.
@@ -66,6 +67,7 @@ Controller outputs go to their own Helm charts rather than the platform chart:
 | `karpenter_interruption_queue_name` | Karpenter chart, `settings.interruptionQueue` |
 | `karpenter_node_role_name` | Your `EC2NodeClass` `role` field |
 | `alb_controller_role_arn` | Load balancer controller chart, `serviceAccount.annotations` |
+| `alb_ingress_certificate_arn` | Platform chart, `websrvr.ingress.annotations["alb.ingress.kubernetes.io/certificate-arn"]` |
 
 Alongside these, set the type discriminators the chart needs:
 
@@ -110,6 +112,39 @@ Then configure `kubectl`:
 ```bash
 aws eks update-kubeconfig --region us-east-1 --name juliahub
 ```
+
+## TLS
+
+TLS terminates at the ALB, not in the cluster. The platform serves plain HTTP behind it, so the chart needs `offloadTLS: true` and no `tlsFullchainPem` / `tlsPrivkeyPem`.
+
+Give the root module a certificate ARN and it comes back out as `alb_ingress_certificate_arn`, which goes on the chart's ingress annotation. The load balancer controller attaches it to the listener when it creates the ALB:
+
+```hcl
+certificate_arn = "arn:aws:acm:us-east-1:111122223333:certificate/abc-123"
+```
+
+Where that ARN comes from is up to you — an existing ACM certificate, one imported from an internal CA, or anything your organisation's issuance process produces. When the parent zone is in Route 53, [modules/acm-certificate](modules/acm-certificate/) will create and validate one:
+
+```hcl
+module "certificate" {
+  source = "./modules/acm-certificate"
+
+  domain_name       = "juliahub.example.com"
+  route53_zone_name = "example.com"
+
+  providers = {
+    aws         = aws
+    aws.route53 = aws
+  }
+}
+
+module "juliahub" {
+  source          = "./"
+  certificate_arn = module.certificate.certificate_arn
+}
+```
+
+Leaving `certificate_arn` empty means the ALB has no certificate and serves HTTP only, which is fine for a scratch install and not much else.
 
 ## Node labels are a chart contract
 
@@ -205,6 +240,7 @@ additional_interface_vpc_endpoints = {
 | [modules/efs](modules/efs/) | EFS filesystem, access point, and mount targets for one shared directory |
 | [modules/karpenter](modules/karpenter/) | Karpenter IAM roles, instance profile, interruption queue |
 | [modules/alb-controller](modules/alb-controller/) | IRSA role for the AWS Load Balancer Controller |
+| [modules/acm-certificate](modules/acm-certificate/) | ACM certificate for the platform hostname, DNS-validated in Route 53 |
 | [modules/compute](modules/compute/) | Datasets bucket, log groups and archives, compute IAM roles |
 
 Each can be consumed independently — for instance, `modules/compute` against a cluster you already run, or `modules/eks` with a database you manage elsewhere.

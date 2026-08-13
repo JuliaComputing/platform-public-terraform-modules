@@ -56,6 +56,12 @@ output "node_role_arn" {
   value       = module.eks.node_role_arn
 }
 
+# TLS outputs
+output "alb_ingress_certificate_arn" {
+  description = "Certificate ARN for the platform chart's websrvr.ingress.annotations[\"alb.ingress.kubernetes.io/certificate-arn\"]. The load balancer controller attaches it to the ALB listener."
+  value       = var.certificate_arn
+}
+
 # Controller outputs
 output "karpenter_controller_role_arn" {
   description = "Karpenter controller IRSA role ARN. Set as serviceAccount.annotations[\"eks.amazonaws.com/role-arn\"] on the Karpenter chart."
