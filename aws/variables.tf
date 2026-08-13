@@ -262,6 +262,12 @@ variable "efs_csi_version" {
   default     = ""
 }
 
+variable "create_default_storage_class" {
+  description = "Whether the EBS CSI addon creates a default StorageClass. EKS ships a gp2 class that is neither default nor CSI-backed, so without this any PVC that does not name a class stays Pending. The platform chart's redis StatefulSet needs it."
+  type        = bool
+  default     = true
+}
+
 variable "enable_efs_csi_driver" {
   description = "Whether to install the aws-efs-csi-driver addon. Required by the JuliaHub platform."
   type        = bool

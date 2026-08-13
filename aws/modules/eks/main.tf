@@ -118,7 +118,11 @@ resource "aws_eks_addon" "ebs_csi_driver" {
 
   tags = var.tags
 
-  configuration_values = jsonencode(local.csi_controller_config)
+  configuration_values = jsonencode(merge(local.csi_controller_config, {
+    defaultStorageClass = {
+      enabled = var.create_default_storage_class
+    }
+  }))
 
   depends_on = [aws_eks_node_group.critical]
 }

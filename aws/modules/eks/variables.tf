@@ -238,6 +238,20 @@ variable "efs_csi_version" {
   default     = ""
 }
 
+variable "create_default_storage_class" {
+  description = <<-EOT
+    Whether the EBS CSI addon creates a default StorageClass.
+
+    EKS ships a gp2 StorageClass, but it is not marked default and uses the
+    in-tree kubernetes.io/aws-ebs provisioner, which Kubernetes removed in
+    1.33. Without this, any PersistentVolumeClaim that does not name a class
+    stays Pending forever. The platform chart's redis StatefulSet is one such
+    claim, so leave this enabled unless you manage storage classes yourself.
+  EOT
+  type        = bool
+  default     = true
+}
+
 variable "enable_efs_csi_driver" {
   description = "Whether to install the aws-efs-csi-driver addon and its IRSA role. The JuliaHub platform requires EFS, so leave this enabled unless EFS is managed outside this module."
   type        = bool

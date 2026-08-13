@@ -91,6 +91,8 @@ module "eks" {
   efs_csi_version       = var.efs_csi_version
   enable_efs_csi_driver = var.enable_efs_csi_driver
 
+  create_default_storage_class = var.create_default_storage_class
+
   enable_karpenter_discovery_tag = var.enable_karpenter_discovery_tag
 
   tags = local.common_tags
