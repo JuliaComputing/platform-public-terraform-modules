@@ -39,15 +39,17 @@ locals {
   # At most one mount target per availability zone is permitted, so subnets are
   # deduplicated by the zone they sit in.
   subnet_ids_by_az = {
-    for id, subnet in data.aws_subnet.selected : subnet.availability_zone => id...
+    for idx, subnet in data.aws_subnet.selected : subnet.availability_zone => var.subnet_ids[idx]...
   }
 
   mount_target_subnet_ids = [for az, ids in local.subnet_ids_by_az : sort(ids)[0]]
 }
 
+# Indexed rather than keyed by subnet id, which is unknown at plan time when the
+# subnets are created in the same apply.
 data "aws_subnet" "selected" {
-  for_each = toset(var.subnet_ids)
-  id       = each.value
+  count = length(var.subnet_ids)
+  id    = var.subnet_ids[count.index]
 }
 
 resource "aws_efs_file_system" "_" {
@@ -132,12 +134,14 @@ resource "aws_security_group" "_" {
   }
 }
 
+# Keyed by position rather than by the security group id, which is unknown at
+# plan time when the referenced group is created in the same apply.
 resource "aws_vpc_security_group_ingress_rule" "nfs_sg" {
-  for_each = toset(var.allow_from_security_group_ids)
+  count = length(var.allow_from_security_group_ids)
 
   security_group_id            = aws_security_group._.id
   description                  = "NFS"
-  referenced_security_group_id = each.value
+  referenced_security_group_id = var.allow_from_security_group_ids[count.index]
   from_port                    = 2049
   to_port                      = 2049
   ip_protocol                  = "tcp"
@@ -155,10 +159,10 @@ resource "aws_vpc_security_group_ingress_rule" "nfs_cidr" {
 }
 
 resource "aws_efs_mount_target" "_" {
-  for_each = toset(local.mount_target_subnet_ids)
+  count = length(local.mount_target_subnet_ids)
 
   file_system_id  = aws_efs_file_system._.id
-  subnet_id       = each.value
+  subnet_id       = local.mount_target_subnet_ids[count.index]
   security_groups = [aws_security_group._.id]
 }
 

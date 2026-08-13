@@ -9,6 +9,19 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "oidc_provider" {
+  description = <<-EOT
+    OIDC issuer host and path for the cluster, without the https:// scheme, as
+    the eks module's oidc_provider output gives it.
+
+    Leave empty to look the cluster up by name. Supply it when the cluster is
+    created in the same apply as this module, since the lookup then fails at
+    plan time with "couldn't find resource".
+  EOT
+  type        = string
+  default     = ""
+}
+
 variable "namespace" {
   description = "Kubernetes namespace the controller is installed into. The upstream chart defaults to kube-system."
   type        = string
@@ -37,11 +50,14 @@ data "aws_caller_identity" "current" {}
 data "aws_partition" "current" {}
 
 data "aws_eks_cluster" "_" {
-  name = var.cluster_name
+  count = var.oidc_provider == "" ? 1 : 0
+  name  = var.cluster_name
 }
 
 locals {
-  oidc_provider     = replace(data.aws_eks_cluster._.identity[0].oidc[0].issuer, "https://", "")
+  # Looking the cluster up only works when it already exists. When it is created
+  # in the same apply, the caller passes oidc_provider through instead.
+  oidc_provider     = var.oidc_provider != "" ? var.oidc_provider : replace(data.aws_eks_cluster._[0].identity[0].oidc[0].issuer, "https://", "")
   oidc_provider_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.oidc_provider}"
 
   role_name = var.role_name == "" ? "${var.cluster_name}-aws-load-balancer-controller" : var.role_name

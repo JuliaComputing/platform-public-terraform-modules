@@ -15,11 +15,13 @@ locals {
   ])
 }
 
+# Indexed rather than keyed by role arn: a caller may pass an arn for a role
+# created in the same apply, which is unknown at plan time.
 resource "aws_eks_access_entry" "nodes" {
-  for_each = toset(local.node_role_arns)
+  count = length(local.node_role_arns)
 
   cluster_name  = aws_eks_cluster._.name
-  principal_arn = each.value
+  principal_arn = local.node_role_arns[count.index]
   type          = "EC2_LINUX"
 }
 

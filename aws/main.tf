@@ -127,7 +127,10 @@ module "karpenter" {
   source = "./modules/karpenter"
   count  = var.create_karpenter_iam ? 1 : 0
 
-  cluster_name         = module.eks.cluster_name
+  cluster_name = module.eks.cluster_name
+  # Passed through rather than looked up: the cluster is created in this same
+  # apply, so a data lookup would fail at plan time.
+  oidc_provider        = module.eks.oidc_provider
   namespace            = var.karpenter_namespace
   service_account_name = var.karpenter_service_account_name
 
@@ -140,7 +143,10 @@ module "alb_controller" {
   source = "./modules/alb-controller"
   count  = var.create_alb_controller_iam ? 1 : 0
 
-  cluster_name         = module.eks.cluster_name
+  cluster_name = module.eks.cluster_name
+  # Passed through rather than looked up: the cluster is created in this same
+  # apply, so a data lookup would fail at plan time.
+  oidc_provider        = module.eks.oidc_provider
   namespace            = var.alb_controller_namespace
   service_account_name = var.alb_controller_service_account_name
 
@@ -210,6 +216,9 @@ module "compute" {
 
   name         = var.compute_name == "" ? var.cluster_name : var.compute_name
   cluster_name = module.eks.cluster_name
+  # Passed through rather than looked up: the cluster is created in this same
+  # apply, so a data lookup would fail at plan time.
+  oidc_provider = module.eks.oidc_provider
 
   service_account_namespace = var.service_account_namespace
   service_account_names     = var.service_account_names

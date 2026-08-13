@@ -8,6 +8,19 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "oidc_provider" {
+  description = <<-EOT
+    OIDC issuer host and path for the cluster, without the https:// scheme, as
+    the eks module's oidc_provider output gives it.
+
+    Leave empty to look the cluster up by name. Supply it when the cluster is
+    created in the same apply as this module, since the lookup then fails at
+    plan time with "couldn't find resource".
+  EOT
+  type        = string
+  default     = ""
+}
+
 variable "service_account_namespace" {
   description = "Kubernetes namespace the platform is deployed into. Used as the IRSA trust subject."
   type        = string

@@ -35,5 +35,5 @@ output "dns_name" {
 
 output "mount_target_ids" {
   description = "IDs of the mount targets, one per availability zone"
-  value       = [for mt in aws_efs_mount_target._ : mt.id]
+  value       = aws_efs_mount_target._[*].id
 }

@@ -64,12 +64,14 @@ resource "aws_vpc_security_group_ingress_rule" "postgres_cidr" {
   ip_protocol       = "tcp"
 }
 
+# Keyed by position rather than by the security group id, which is unknown at
+# plan time when the referenced group is created in the same apply.
 resource "aws_vpc_security_group_ingress_rule" "postgres_sg" {
-  for_each = toset(var.allow_from_security_group_ids)
+  count = length(var.allow_from_security_group_ids)
 
   security_group_id            = aws_security_group._.id
   description                  = "PostgreSQL"
-  referenced_security_group_id = each.value
+  referenced_security_group_id = var.allow_from_security_group_ids[count.index]
   from_port                    = 5432
   to_port                      = 5432
   ip_protocol                  = "tcp"
