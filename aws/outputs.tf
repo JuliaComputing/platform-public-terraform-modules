@@ -56,6 +56,16 @@ output "node_role_arn" {
   value       = module.eks.node_role_arn
 }
 
+output "critical_node_tolerations_helm_set" {
+  description = "Tolerations for the critical node group as helm --set arguments. Pass these to the Karpenter and load balancer controller installs, or their pods stay Pending."
+  value       = module.eks.critical_node_tolerations_helm_set
+}
+
+output "critical_node_tolerations" {
+  description = "Tolerations for the critical node group in Kubernetes form"
+  value       = module.eks.critical_node_tolerations
+}
+
 # TLS outputs
 output "alb_ingress_certificate_arn" {
   description = "Certificate ARN for the platform chart's websrvr.ingress.annotations[\"alb.ingress.kubernetes.io/certificate-arn\"]. The load balancer controller attaches it to the ALB listener."

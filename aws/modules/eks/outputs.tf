@@ -57,3 +57,29 @@ output "critical_node_labels" {
   description = "Labels applied to the critical node group. The platform Helm chart's nodeSelectors must match these."
   value       = var.critical_node_labels
 }
+
+output "critical_node_tolerations" {
+  description = <<-EOT
+    Tolerations, in Kubernetes form, matching the taints on the critical node
+    group. The managed addons this module installs already carry them.
+
+    Anything else scheduled onto these nodes needs them too, which in practice
+    means every controller installed by Helm alongside the platform: the AWS
+    Load Balancer Controller, Karpenter, and similar. Without them those pods
+    sit Pending forever, and if Karpenter is among them no untainted node ever
+    gets provisioned to rescue them.
+  EOT
+  value       = local.addon_tolerations
+}
+
+output "critical_node_tolerations_helm_set" {
+  description = "The same tolerations rendered as --set arguments for a helm install, e.g. `helm install ... $(terraform output -raw critical_node_tolerations_helm_set)`."
+  value = join(" ", flatten([
+    for i, t in local.addon_tolerations : [
+      "--set tolerations[${i}].key=${t.key}",
+      "--set tolerations[${i}].operator=${t.operator}",
+      "--set tolerations[${i}].value=${t.value}",
+      "--set tolerations[${i}].effect=${t.effect}",
+    ]
+  ]))
+}

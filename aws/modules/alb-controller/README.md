@@ -19,6 +19,18 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set-string serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=<iam_role_arn>
 ```
 
+> **Tolerations are required.** The only node group the `eks` module creates is
+> tainted `CriticalAddonsOnly=true:NoSchedule`, so this chart's pods stay
+> `Pending` unless they tolerate it. The root module exposes the right values as
+> `critical_node_tolerations_helm_set`:
+>
+> ```bash
+> helm install ... $(terraform output -raw critical_node_tolerations_helm_set)
+> ```
+>
+> Until an autoscaler provisions untainted nodes, the tainted node group is the
+> only place these pods can run.
+
 The controller also needs the subnet tags the `vpc` module already applies: `kubernetes.io/role/elb` on public subnets and `kubernetes.io/role/internal-elb` on private ones.
 
 ## Usage

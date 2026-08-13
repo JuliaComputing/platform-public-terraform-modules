@@ -25,7 +25,9 @@ Each of these can be turned off — `create_rds`, `create_efs_config_directory`,
 
 AWS publishes **no EKS managed add-on** for either Karpenter or the AWS Load Balancer Controller. The managed add-on catalog covers the CNI, CoreDNS, kube-proxy, the CSI drivers, and a set of AWS and partner agents; both of these are installed by Helm from their upstream charts instead.
 
-So this module creates their AWS-side resources — IAM roles, Karpenter's instance profile and interruption queue — and leaves the in-cluster install to Helm. The two module READMEs carry the matching `helm install` invocations. Everything the charts need from AWS, including the subnet and security group discovery tags Karpenter selects on, is already wired up here.
+So this module creates their AWS-side resources — IAM roles, Karpenter's instance profile and interruption queue — and leaves the in-cluster install to Helm.
+
+**Both charts must be given tolerations for the critical node group's `CriticalAddonsOnly` taint**, or their pods never schedule. Pass `$(terraform output -raw critical_node_tolerations_helm_set)` to each `helm install`. Missing this on Karpenter deadlocks the cluster: the controller cannot schedule, so it never provisions the untainted nodes that would host it. The two module READMEs carry the matching `helm install` invocations. Everything the charts need from AWS, including the subnet and security group discovery tags Karpenter selects on, is already wired up here.
 
 ## What this does not create
 

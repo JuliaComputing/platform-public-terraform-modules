@@ -14,6 +14,18 @@ helm install karpenter oci://public.ecr.aws/karpenter/karpenter \
   --set-string serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=<controller_role_arn>
 ```
 
+> **Tolerations are required.** The only node group the `eks` module creates is
+> tainted `CriticalAddonsOnly=true:NoSchedule`, so this chart's pods stay
+> `Pending` unless they tolerate it. The root module exposes the right values as
+> `critical_node_tolerations_helm_set`:
+>
+> ```bash
+> helm install ... $(terraform output -raw critical_node_tolerations_helm_set)
+> ```
+>
+> For Karpenter this is self-inflicted deadlock if missed: the controller cannot
+> schedule, so it never provisions the untainted nodes that would host it.
+
 You then create an `EC2NodeClass` referencing the node role, and one or more `NodePool` resources describing the capacity you want:
 
 ```yaml
