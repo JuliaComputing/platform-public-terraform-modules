@@ -91,7 +91,7 @@ The controller policy is scoped more tightly than the permissive examples in cir
 
 - Instance termination and launch template deletion are conditioned on the `kubernetes.io/cluster/<cluster_name>: owned` tag, so the controller can only tear down what it created for this cluster.
 - `iam:PassRole` is restricted to the node role this module creates, rather than `*`. Unscoped `PassRole` would let anything holding this role hand any role to EC2.
-- Instance profile management is scoped to profiles whose names start with the cluster name.
+- Instance profile management is scoped to the IAM path Karpenter generates, `/karpenter/<region>/<cluster>/<uuid>/`, plus profiles named for the cluster. Scoping only to the latter denies every `CreateInstanceProfile` call, since the profiles Karpenter creates are pathed rather than at the root.
 - Queue access is granted only when the interruption queue exists.
 
 ## Inputs
@@ -106,6 +106,6 @@ See [`variables.tf`](variables.tf) for the full list with descriptions and defau
 | `controller_role_name` | Controller role name |
 | `node_role_arn` | Node role ARN, for cluster access entries and EFS mount policies |
 | `node_role_name` | Node role name, for the `EC2NodeClass` `role` field |
-| `node_instance_profile_name` | Node instance profile name |
+| `node_instance_profile_name` | Node instance profile name. Karpenter does not use this: it creates its own profile per `EC2NodeClass`, under the IAM path `/karpenter/<region>/<cluster>/<uuid>/`. |
 | `interruption_queue_name` | Queue name, for the chart's `settings.interruptionQueue` |
 | `interruption_queue_arn` | Queue ARN |

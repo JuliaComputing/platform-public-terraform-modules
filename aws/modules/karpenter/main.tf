@@ -69,6 +69,9 @@ resource "aws_iam_role_policy_attachment" "node_additional" {
   role       = aws_iam_role.node.name
 }
 
+# Karpenter creates and manages its own instance profile per EC2NodeClass, so
+# it does not consume this one. Kept because it costs nothing and lets the node
+# role be attached to instances launched outside Karpenter.
 resource "aws_iam_instance_profile" "node" {
   name = local.node_role_name
   role = aws_iam_role.node.name
@@ -182,6 +185,11 @@ data "aws_iam_policy_document" "controller" {
     }
   }
 
+  # Karpenter manages its own instance profile for each EC2NodeClass rather
+  # than using one created here. It generates the name and places it under an
+  # IAM path of /karpenter/<region>/<cluster>/<uuid>/, so a resource pattern
+  # anchored at the root (instance-profile/<cluster>*) never matches and every
+  # CreateInstanceProfile is denied.
   statement {
     sid = "ManageNodeInstanceProfile"
     actions = [
@@ -193,6 +201,7 @@ data "aws_iam_policy_document" "controller" {
       "iam:TagInstanceProfile",
     ]
     resources = [
+      "arn:${local.partition}:iam::${local.account_id}:instance-profile/karpenter/*/${var.cluster_name}/*",
       "arn:${local.partition}:iam::${local.account_id}:instance-profile/${var.cluster_name}*",
     ]
   }
