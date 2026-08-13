@@ -83,7 +83,7 @@ data "aws_iam_policy_document" "log_archive" {
 
     principals {
       type        = "Service"
-      identifiers = ["logs.${data.aws_region.current.region}.amazonaws.com"]
+      identifiers = ["logs.${data.aws_region.current.name}.amazonaws.com"]
     }
 
     resources = [aws_s3_bucket.log_archive[each.key].arn]
@@ -95,7 +95,7 @@ data "aws_iam_policy_document" "log_archive" {
 
     principals {
       type        = "Service"
-      identifiers = ["logs.${data.aws_region.current.region}.amazonaws.com"]
+      identifiers = ["logs.${data.aws_region.current.name}.amazonaws.com"]
     }
 
     resources = ["${aws_s3_bucket.log_archive[each.key].arn}/*"]

@@ -6,6 +6,8 @@
 
 data "aws_caller_identity" "current" {}
 data "aws_partition" "current" {}
+# .name rather than .region: .region only exists in aws provider v6, and
+# this module supports >= 5.0.0. .name works in both, deprecated in v6.
 data "aws_region" "current" {}
 
 data "aws_eks_cluster" "_" {
@@ -121,7 +123,7 @@ data "aws_iam_policy_document" "controller" {
     actions = [
       "eks:DescribeCluster",
     ]
-    resources = ["arn:${local.partition}:eks:${data.aws_region.current.region}:${local.account_id}:cluster/${var.cluster_name}"]
+    resources = ["arn:${local.partition}:eks:${data.aws_region.current.name}:${local.account_id}:cluster/${var.cluster_name}"]
   }
 
   statement {

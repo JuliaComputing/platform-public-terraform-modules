@@ -1,4 +1,6 @@
 data "aws_caller_identity" "current" {}
+# .name rather than .region: .region only exists in aws provider v6, and
+# this module supports >= 5.0.0. .name works in both, deprecated in v6.
 data "aws_region" "current" {}
 data "aws_partition" "current" {}
 
