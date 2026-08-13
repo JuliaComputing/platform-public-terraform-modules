@@ -73,13 +73,21 @@ output "critical_node_tolerations" {
 }
 
 output "critical_node_tolerations_helm_set" {
-  description = "The same tolerations rendered as --set arguments for a helm install, e.g. `helm install ... $(terraform output -raw critical_node_tolerations_helm_set)`."
+  description = <<-EOT
+    The same tolerations rendered as arguments for a helm install:
+
+      helm install ... $(terraform output -raw critical_node_tolerations_helm_set)
+
+    The toleration value uses --set-string. A taint value like "true" would
+    otherwise be coerced to a boolean, and the apiserver rejects the Deployment
+    with "expected string, got true".
+  EOT
   value = join(" ", flatten([
     for i, t in local.addon_tolerations : [
-      "--set tolerations[${i}].key=${t.key}",
-      "--set tolerations[${i}].operator=${t.operator}",
-      "--set tolerations[${i}].value=${t.value}",
-      "--set tolerations[${i}].effect=${t.effect}",
+      "--set-string tolerations[${i}].key=${t.key}",
+      "--set-string tolerations[${i}].operator=${t.operator}",
+      "--set-string tolerations[${i}].value=${t.value}",
+      "--set-string tolerations[${i}].effect=${t.effect}",
     ]
   ]))
 }
