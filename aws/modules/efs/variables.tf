@@ -27,7 +27,7 @@ variable "vpc_id" {
 }
 
 variable "subnet_ids" {
-  description = "Subnet IDs to create mount targets in, at most one per availability zone. Use the private subnets."
+  description = "Subnet IDs to create mount targets in. Pass at most one subnet per availability zone: EFS rejects a second mount target in the same zone, and the zone of a subnet is not known until apply so the module cannot deduplicate for you. Use the private subnets."
   type        = list(string)
 }
 

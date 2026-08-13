@@ -3,6 +3,12 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "lookup_cluster" {
+  description = "Whether to look the cluster up by name to derive its OIDC issuer. Set false and supply oidc_provider when the cluster is created in the same apply, since the count on the lookup must be known at plan time."
+  type        = bool
+  default     = true
+}
+
 variable "oidc_provider" {
   description = <<-EOT
     OIDC issuer host and path for the cluster, without the https:// scheme, as

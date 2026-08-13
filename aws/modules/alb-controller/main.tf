@@ -9,6 +9,12 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "lookup_cluster" {
+  description = "Whether to look the cluster up by name to derive its OIDC issuer. Set false and supply oidc_provider when the cluster is created in the same apply, since the count on the lookup must be known at plan time."
+  type        = bool
+  default     = true
+}
+
 variable "oidc_provider" {
   description = <<-EOT
     OIDC issuer host and path for the cluster, without the https:// scheme, as
@@ -50,14 +56,14 @@ data "aws_caller_identity" "current" {}
 data "aws_partition" "current" {}
 
 data "aws_eks_cluster" "_" {
-  count = var.oidc_provider == "" ? 1 : 0
+  count = var.lookup_cluster ? 1 : 0
   name  = var.cluster_name
 }
 
 locals {
   # Looking the cluster up only works when it already exists. When it is created
   # in the same apply, the caller passes oidc_provider through instead.
-  oidc_provider     = var.oidc_provider != "" ? var.oidc_provider : replace(data.aws_eks_cluster._[0].identity[0].oidc[0].issuer, "https://", "")
+  oidc_provider     = var.lookup_cluster ? replace(data.aws_eks_cluster._[0].identity[0].oidc[0].issuer, "https://", "") : var.oidc_provider
   oidc_provider_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.oidc_provider}"
 
   role_name = var.role_name == "" ? "${var.cluster_name}-aws-load-balancer-controller" : var.role_name

@@ -5,14 +5,14 @@ data "aws_region" "current" {}
 data "aws_partition" "current" {}
 
 data "aws_eks_cluster" "_" {
-  count = var.oidc_provider == "" ? 1 : 0
+  count = var.lookup_cluster ? 1 : 0
   name  = var.cluster_name
 }
 
 locals {
   # Looking the cluster up only works when it already exists. When it is created
   # in the same apply, the caller passes oidc_provider through instead.
-  oidc_provider     = var.oidc_provider != "" ? var.oidc_provider : replace(data.aws_eks_cluster._[0].identity[0].oidc[0].issuer, "https://", "")
+  oidc_provider     = var.lookup_cluster ? replace(data.aws_eks_cluster._[0].identity[0].oidc[0].issuer, "https://", "") : var.oidc_provider
   oidc_provider_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.oidc_provider}"
 
   # The service-account role runs the platform pods; they assume the jobs and

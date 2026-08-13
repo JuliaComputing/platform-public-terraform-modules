@@ -36,20 +36,11 @@ locals {
   tiering_enabled = var.transition_to_ia != "none"
   restrict_mount  = length(var.restrict_mount_to_role_arns) > 0
 
-  # At most one mount target per availability zone is permitted, so subnets are
-  # deduplicated by the zone they sit in.
-  subnet_ids_by_az = {
-    for idx, subnet in data.aws_subnet.selected : subnet.availability_zone => var.subnet_ids[idx]...
-  }
-
-  mount_target_subnet_ids = [for az, ids in local.subnet_ids_by_az : sort(ids)[0]]
-}
-
-# Indexed rather than keyed by subnet id, which is unknown at plan time when the
-# subnets are created in the same apply.
-data "aws_subnet" "selected" {
-  count = length(var.subnet_ids)
-  id    = var.subnet_ids[count.index]
+  # At most one mount target per availability zone is permitted. The AZ of each
+  # subnet is only known after apply, so rather than deduplicating here (which
+  # would make the resource count unknown at plan time) a mount target is
+  # declared per supplied subnet. Callers pass one subnet per AZ.
+  mount_target_subnet_ids = var.subnet_ids
 }
 
 resource "aws_efs_file_system" "_" {
@@ -159,10 +150,10 @@ resource "aws_vpc_security_group_ingress_rule" "nfs_cidr" {
 }
 
 resource "aws_efs_mount_target" "_" {
-  count = length(local.mount_target_subnet_ids)
+  count = length(var.subnet_ids)
 
   file_system_id  = aws_efs_file_system._.id
-  subnet_id       = local.mount_target_subnet_ids[count.index]
+  subnet_id       = var.subnet_ids[count.index]
   security_groups = [aws_security_group._.id]
 }
 
