@@ -186,6 +186,47 @@ azure/
         └── README.md
 ```
 
+### Using the modules individually
+
+The root module is a convenience: it wires the submodules together with sensible defaults. Every submodule is also usable on its own, so you can adopt the parts you want and keep whatever you already run.
+
+That matters most when you already have an AKS cluster. You can skip `modules/aks` and `modules/networking` entirely and still use the modules for the pieces the platform needs around them:
+
+```hcl
+# Existing resource group, VNet and cluster; create only what the platform adds.
+module "postgresql" {
+  source = "github.com/JuliaComputing/platform-public-terraform-modules//azure/modules/postgresql?depth=1"
+
+  server_name         = "juliahub-postgres"
+  resource_group_name = "my-existing-rg"
+  location            = "eastus"
+
+  # Delegated subnet and private DNS zone you already manage.
+  subnet_id            = "/subscriptions/.../subnets/postgresql-subnet"
+  private_dns_zone_id  = "/subscriptions/.../privateDnsZones/privatelink.postgres.database.azure.com"
+
+  administrator_login    = "psqladmin"
+  administrator_password = var.postgresql_password
+}
+
+module "storage_files" {
+  source = "github.com/JuliaComputing/platform-public-terraform-modules//azure/modules/storage-files?depth=1"
+
+  storage_account_name = "juliahubfiles"   # globally unique, 3-24 lowercase alphanumeric
+  resource_group_name  = "my-existing-rg"
+  location             = "eastus"
+
+  file_share_names           = ["juliahub-config", "juliahub-userdata"]
+  allowed_subnet_ids         = ["/subscriptions/.../subnets/aks-subnet"]
+  private_endpoint_subnet_id = "/subscriptions/.../subnets/private-endpoints"
+  private_dns_zone_id        = "/subscriptions/.../privateDnsZones/privatelink.file.core.windows.net"
+}
+```
+
+Add `modules/storage-blob` the same way if you need blob storage. Each module's README lists its inputs and outputs.
+
+One thing to know when composing them yourself: the root module creates the resource group, the private DNS zones and the subnet delegations, and threads their IDs into the storage and database modules. Consuming submodules directly means those already exist in your environment and you pass their IDs in, as above — in particular PostgreSQL Flexible Server needs a **delegated** subnet, and the storage accounts need a private endpoint subnet and the matching private DNS zone, or name resolution from the cluster will fail.
+
 ## Key Features
 
 ### AKS Cluster
