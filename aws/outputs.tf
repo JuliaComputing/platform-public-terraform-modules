@@ -103,6 +103,20 @@ output "alb_controller_role_arn" {
   value       = one(module.alb_controller[*].iam_role_arn)
 }
 
+output "efs_mounts_require_iam" {
+  description = <<-EOT
+    Whether EFS mounts must authenticate with the `iam` mount option.
+
+    True when a filesystem policy restricting mounts to the node roles is
+    attached, since that removes the EFS default of granting access to any
+    client reaching a mount target. Maps to the chart's
+    configDirectory.efs.useIAM and compute.userdataDirectory.efs.useIAM, which
+    must both be set to this value or the mounts fail with
+    `access denied by server`.
+  EOT
+  value       = var.restrict_efs_mounts_to_node_roles
+}
+
 # Shared filesystem outputs
 output "config_directory_efs_filesystem_id" {
   description = "EFS filesystem ID for the config directory. Maps to configDirectory.efs.filesystemId."
