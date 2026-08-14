@@ -122,7 +122,18 @@ variable "access_point_gid" {
 }
 
 variable "restrict_mount_to_role_arns" {
-  description = "IAM role ARNs permitted to mount the filesystem. When set, a filesystem policy is attached that allows only these principals and denies everyone else. Pass the EKS node role, since the EFS CSI node daemonset mounts under the node identity. Leaving this empty attaches no policy, so access is controlled by security groups alone."
+  description = <<-EOT
+    IAM role ARNs permitted to mount the filesystem.
+
+    When set, a filesystem policy is attached allowing these principals to
+    mount through a mount target; anything else is refused by IAM's implicit
+    deny. Pass the EKS node role, since the EFS CSI node daemonset mounts
+    under the node identity rather than the pod's.
+
+    Mounts must then authenticate, so every EFS PersistentVolume needs the
+    `iam` mount option. Leaving this empty attaches no policy, and access is
+    controlled by the mount target security groups alone.
+  EOT
   type        = list(string)
   default     = []
 }

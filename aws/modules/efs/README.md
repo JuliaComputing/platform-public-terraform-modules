@@ -58,6 +58,7 @@ compute:
     efs:
       filesystemId: <filesystem_id>
       accessPointId: <access_point_id>
+      useIAM: true   # must match configDirectory.efs.useIAM
 ```
 
 No `StorageClass` is needed. The chart creates the PV and PVC directly against the EFS CSI driver, which the `eks` module installs.
@@ -70,7 +71,11 @@ Mount targets are created one per availability zone across the subnets you pass.
 
 ## Restricting who can mount
 
-`restrict_mount_to_role_arns` attaches a filesystem policy allowing only the named principals to mount, and denying everyone else. Pass the **node** role: the EFS CSI node daemonset performs the mount under the node identity, not the pod's IRSA role.
+`restrict_mount_to_role_arns` attaches a filesystem policy allowing the named principals to mount through a mount target. Anything else is refused by IAM's implicit deny, so no explicit deny statement is needed — this is the shape the [EFS documentation](https://docs.aws.amazon.com/efs/latest/ug/security_iam_resource-based-policy-examples.html) uses.
+
+Pass the **node** role: the EFS CSI node daemonset performs the mount under the node identity, not the pod's IRSA role.
+
+Note that EFS enforces only four condition keys for NFS mounts — `aws:SecureTransport`, `aws:SourceIp`, `elasticfilesystem:AccessPointArn` and `elasticfilesystem:AccessedViaMountTarget`. A policy written around `aws:PrincipalArn` conditions is silently ignored, so restrictions must come from the principals named in the allow rather than from a conditioned deny.
 
 When Karpenter provisions job nodes, its node role must be included as well or job pods will fail to mount:
 

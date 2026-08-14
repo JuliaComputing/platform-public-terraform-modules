@@ -388,22 +388,24 @@ variable "restrict_efs_mounts_to_node_roles" {
     Whether to attach an EFS filesystem policy restricting mounts to the
     cluster node roles.
 
-    Off by default. Attaching any policy removes the EFS default, which grants
-    access to any client that can reach a mount target, so every mount must
-    then authenticate. That requires the `iam` mount option on every EFS
-    PersistentVolume, including the per-job volumes the platform creates
-    dynamically. Enable this only once you have confirmed the platform version
-    in use sets that option everywhere; otherwise mounts fail with
-    `access denied by server`.
+    On by default. Without a policy, EFS grants access to any client that can
+    reach a mount target, so the mount target security group is the only
+    control. The policy adds an identity check on top of it.
 
-    Note that IAM principal conditions are not enforced for NFS mounts at all.
-    EFS honours only aws:SecureTransport, aws:SourceIp,
-    elasticfilesystem:AccessPointArn, and
-    elasticfilesystem:AccessedViaMountTarget. Network access is already scoped
-    by the mount target security groups, which is the primary control.
+    Attaching a policy means every mount must authenticate, which requires the
+    `iam` mount option on every EFS PersistentVolume — including the per-job
+    volumes the platform creates dynamically. The platform gained that for the
+    userdata volumes in JuliaHub#23608, so this needs **26.4.0-rc20 or later,
+    or a 26.3 patch after 26.3.8**. Set it to false when installing an older
+    platform version; otherwise mounts fail with `access denied by server` and
+    fssrvr, jobloops and gitaly cannot start.
+
+    The chart's configDirectory.efs.useIAM and
+    compute.userdataDirectory.efs.useIAM must match this setting. The
+    efs_mounts_require_iam output carries the value for exactly that purpose.
   EOT
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "additional_efs_mount_role_arns" {

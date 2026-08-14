@@ -36,19 +36,6 @@ locals {
   tiering_enabled = var.transition_to_ia != "none"
   restrict_mount  = length(var.restrict_mount_to_role_arns) > 0
 
-  # A mount authenticates as an STS session, so aws:PrincipalArn is the
-  # assumed-role form (arn:aws:sts::<acct>:assumed-role/<role>/<session>)
-  # rather than the iam role arn the caller passes. Comparing against the role
-  # arn alone never matches, so the deny below would fire against the very
-  # roles the allow permits. Both forms are matched, with a wildcard for the
-  # session name.
-  mount_principal_arn_patterns = flatten([
-    for arn in var.restrict_mount_to_role_arns : [
-      arn,
-      "${replace(replace(arn, ":iam::", ":sts::"), ":role/", ":assumed-role/")}/*",
-    ]
-  ])
-
   # At most one mount target per availability zone is permitted. The AZ of each
   # subnet is only known after apply, so rather than deduplicating here (which
   # would make the resource count unknown at plan time) a mount target is
@@ -175,6 +162,10 @@ resource "aws_efs_mount_target" "_" {
 data "aws_iam_policy_document" "filesystem" {
   count = local.restrict_mount ? 1 : 0
 
+  # Shaped after the example in the EFS documentation: an allow naming the
+  # principals, conditioned on the mount arriving through a mount target. Any
+  # principal not named here is refused by IAM's implicit deny, so no explicit
+  # deny statement is needed to restrict access.
   statement {
     sid    = "AllowMountFromNamedRoles"
     effect = "Allow"
@@ -191,29 +182,11 @@ data "aws_iam_policy_document" "filesystem" {
     ]
 
     resources = [aws_efs_file_system._.arn]
-  }
-
-  statement {
-    sid    = "DenyMountFromOtherPrincipals"
-    effect = "Deny"
-
-    principals {
-      type        = "*"
-      identifiers = ["*"]
-    }
-
-    actions = [
-      "elasticfilesystem:ClientMount",
-      "elasticfilesystem:ClientWrite",
-      "elasticfilesystem:ClientRootAccess",
-    ]
-
-    resources = [aws_efs_file_system._.arn]
 
     condition {
-      test     = "ArnNotLike"
-      variable = "aws:PrincipalArn"
-      values   = local.mount_principal_arn_patterns
+      test     = "Bool"
+      variable = "elasticfilesystem:AccessedViaMountTarget"
+      values   = ["true"]
     }
   }
 
