@@ -245,7 +245,49 @@ additional_interface_vpc_endpoints = {
 | [modules/acm-certificate](modules/acm-certificate/) | ACM certificate for the platform hostname, DNS-validated in Route 53 |
 | [modules/compute](modules/compute/) | Datasets bucket, log groups and archives, compute IAM roles |
 
-Each can be consumed independently — for instance, `modules/compute` against a cluster you already run, or `modules/eks` with a database you manage elsewhere.
+### Using the modules individually
+
+The root module is a convenience: it wires the submodules together with sensible defaults. Every submodule is also usable on its own, so you can adopt the parts you want and keep whatever you already run.
+
+That matters most when you already have an EKS cluster. You can skip `modules/eks` entirely and still use the modules for the pieces the platform needs around it:
+
+```hcl
+# Existing cluster and network; create only what the platform adds.
+data "aws_eks_cluster" "existing" {
+  name = "my-cluster"
+}
+
+module "config_efs" {
+  source = "github.com/JuliaComputing/platform-public-terraform-modules//aws/modules/efs?depth=1"
+
+  name       = "juliahub"
+  purpose    = "config"
+  vpc_id     = "vpc-0123456789abcdef0"
+  subnet_ids = ["subnet-aaa", "subnet-bbb"] # one per availability zone
+
+  allow_from_security_group_ids = [
+    data.aws_eks_cluster.existing.vpc_config[0].cluster_security_group_id,
+  ]
+}
+
+module "compute" {
+  source = "github.com/JuliaComputing/platform-public-terraform-modules//aws/modules/compute?depth=1"
+
+  name         = "juliahub.example.com"
+  cluster_name = data.aws_eks_cluster.existing.name
+
+  # The cluster already exists, so the module can look up its OIDC issuer
+  # rather than being told. Pass oidc_provider and set lookup_cluster = false
+  # only when the cluster is created in the same apply.
+}
+```
+
+Repeat `modules/efs` with `purpose = "userdata"` for per-job storage, and add `modules/rds`, `modules/acm-certificate`, `modules/karpenter` or `modules/alb-controller` as needed. Each module's README lists its inputs and outputs.
+
+Two things to know when composing them yourself:
+
+- **The root module wires up cross-cutting details you now own.** It grants the Karpenter node role access to the cluster and to the EFS filesystems, and passes the EKS cluster security group to RDS and EFS so only cluster workloads can reach them. Consuming submodules directly means doing that wiring in your own configuration; the `karpenter` and `efs` READMEs spell out which values go where.
+- **`lookup_cluster` decides how the IRSA modules find the cluster.** Against an existing cluster leave it at its default and the module looks the cluster up by name. When the cluster is created in the same apply that lookup fails at plan time, so the root module passes `oidc_provider` through and sets `lookup_cluster = false`.
 
 ## Inputs
 
