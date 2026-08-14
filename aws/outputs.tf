@@ -14,6 +14,11 @@ output "private_subnet_ids" {
   value       = module.vpc.private_subnet_ids
 }
 
+output "region" {
+  description = "AWS region the infrastructure was created in. Convenient for follow-up CLI calls such as aws eks update-kubeconfig."
+  value       = var.region
+}
+
 # Cluster outputs
 output "cluster_name" {
   description = "Name of the EKS cluster"
