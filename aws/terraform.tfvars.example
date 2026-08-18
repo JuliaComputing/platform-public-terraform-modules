@@ -111,15 +111,20 @@ alarm_sns_topic_arns = []
 # Datasets bucket, log groups, and the IAM roles the platform uses to run jobs.
 create_compute = true
 
-# Identifies the install. Names the IAM roles and derives bucket names, and is
-# the default CORS origin for direct dataset uploads, so it should be the
-# hostname users load the platform from.
-compute_name = "juliahub.example.com"
+# Hostname users load the platform from. This is the default CORS origin for
+# direct dataset uploads, so it must be the real hostname.
+platform_hostname = "juliahub.example.com"
+
+# Prefix for generated IAM role, bucket and log group names. Defaults to
+# platform_hostname with dots replaced by hyphens. Set it when the hostname is
+# too long: S3 caps bucket names at 63 characters and IAM role names at 64, and
+# the derived suffixes push a long hostname over. Does not affect CORS.
+# resource_name_prefix = "juliahub"
 
 # Kubernetes namespace the platform is installed into. Used as the IRSA subject.
 service_account_namespace = "juliahub"
 
-# Override if the platform is served from a different hostname than compute_name.
+# Override if uploads come from a hostname other than platform_hostname.
 # allowed_origins = ["juliahub.example.com"]
 
 create_logging           = true

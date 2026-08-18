@@ -1,9 +1,9 @@
 locals {
   create_logging = var.create_logging
 
-  audit_log_group_name          = var.audit_log_group_name == "" ? "${var.name}-audit" : var.audit_log_group_name
+  audit_log_group_name          = var.audit_log_group_name == "" ? "${local.name_slug}-audit" : var.audit_log_group_name
   audit_log_archive_bucket_name = var.audit_log_archive_bucket_name == "" ? "${local.name_slug}-audit-archive" : var.audit_log_archive_bucket_name
-  job_log_group_name            = var.job_log_group_name == "" ? "${var.name}-job-logs" : var.job_log_group_name
+  job_log_group_name            = var.job_log_group_name == "" ? "${local.name_slug}-job-logs" : var.job_log_group_name
   job_log_archive_bucket_name   = var.job_log_archive_bucket_name == "" ? "${local.name_slug}-job-logs-archive" : var.job_log_archive_bucket_name
 
   log_archive_buckets = local.create_logging ? {

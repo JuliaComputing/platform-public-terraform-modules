@@ -1,6 +1,28 @@
-variable "name" {
-  description = "Name identifying this install. Used to name IAM roles and policies, and to derive default bucket and log group names. A domain such as example.com is typical; dots are replaced with hyphens where S3 requires it."
+variable "platform_hostname" {
+  description = <<-EOT
+    Hostname users load the platform from, e.g. juliahub.example.com.
+
+    This is the default CORS origin for direct dataset uploads, so it has to be
+    the real hostname — a browser upload from a different origin is refused.
+    It also seeds the default IAM, bucket and log group names, with dots
+    flattened to hyphens where S3 requires it; set `resource_name_prefix` if
+    those need to be shorter than the hostname allows.
+  EOT
   type        = string
+}
+
+variable "resource_name_prefix" {
+  description = <<-EOT
+    Prefix for generated IAM role, bucket and log group names. Defaults to
+    `platform_hostname` with dots replaced by hyphens.
+
+    Set this when the hostname is too long for what it feeds: S3 bucket names
+    are capped at 63 characters and IAM role names at 64, and the derived
+    suffixes push a long hostname over, failing the apply partway through. It
+    does not affect the CORS origin.
+  EOT
+  type        = string
+  default     = ""
 }
 
 variable "cluster_name" {

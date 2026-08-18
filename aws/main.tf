@@ -231,8 +231,9 @@ module "compute" {
   source = "./modules/compute"
   count  = var.create_compute ? 1 : 0
 
-  name         = var.compute_name == "" ? var.cluster_name : var.compute_name
-  cluster_name = module.eks.cluster_name
+  platform_hostname    = var.platform_hostname == "" ? var.cluster_name : var.platform_hostname
+  resource_name_prefix = var.resource_name_prefix
+  cluster_name         = module.eks.cluster_name
   # Passed through rather than looked up: the cluster is created in this same
   # apply, so a data lookup would fail at plan time.
   lookup_cluster = false

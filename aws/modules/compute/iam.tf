@@ -64,7 +64,7 @@ data "aws_iam_policy_document" "service_account_trust" {
 }
 
 resource "aws_iam_role" "service_account" {
-  name               = "juliahub-compute.${var.name}"
+  name               = "juliahub-compute.${local.name_slug}"
   assume_role_policy = data.aws_iam_policy_document.service_account_trust.json
 
   tags = var.tags
@@ -85,7 +85,7 @@ data "aws_iam_policy_document" "assumable_role_trust" {
 }
 
 resource "aws_iam_role" "jobs" {
-  name                 = "jobs.${var.name}"
+  name                 = "jobs.${local.name_slug}"
   assume_role_policy   = data.aws_iam_policy_document.assumable_role_trust.json
   max_session_duration = var.jobs_role_max_session_duration
 
@@ -93,7 +93,7 @@ resource "aws_iam_role" "jobs" {
 }
 
 resource "aws_iam_role" "datasets" {
-  name                 = "datasets.${var.name}"
+  name                 = "datasets.${local.name_slug}"
   assume_role_policy   = data.aws_iam_policy_document.assumable_role_trust.json
   max_session_duration = var.datasets_role_max_session_duration
 
@@ -101,7 +101,7 @@ resource "aws_iam_role" "datasets" {
 }
 
 resource "aws_iam_role" "job_outputs" {
-  name                 = "job-outputs.${var.name}"
+  name                 = "job-outputs.${local.name_slug}"
   assume_role_policy   = data.aws_iam_policy_document.assumable_role_trust.json
   max_session_duration = var.job_outputs_role_max_session_duration
 
@@ -111,7 +111,7 @@ resource "aws_iam_role" "job_outputs" {
 # --- Datasets policy --------------------------------------------------------
 
 resource "aws_iam_policy" "datasets" {
-  name        = "datasets.${var.name}"
+  name        = "datasets.${local.name_slug}"
   description = "Access to the platform prefixes of the ${local.datasets_bucket_name} bucket"
   policy = templatefile("${path.module}/policies/datasets.json.tftpl", {
     datasets_bucket_arn    = local.datasets_bucket_arn
@@ -140,7 +140,7 @@ resource "aws_iam_role_policy_attachment" "service_account_datasets" {
 # sidecars uploading result files. A session policy narrows it further to a
 # single job's prefix at AssumeRole time.
 resource "aws_iam_policy" "job_outputs" {
-  name        = "job-outputs.${var.name}"
+  name        = "job-outputs.${local.name_slug}"
   description = "Multipart upload access to the results prefix of the ${local.datasets_bucket_name} bucket"
   policy = templatefile("${path.module}/policies/job-outputs.json.tftpl", {
     datasets_bucket_arn     = local.datasets_bucket_arn
@@ -159,8 +159,8 @@ resource "aws_iam_role_policy_attachment" "job_outputs" {
 # --- Jobs policy ------------------------------------------------------------
 
 resource "aws_iam_policy" "jobs" {
-  name        = "jobs.${var.name}"
-  description = "Log and secret access for jobs running under ${var.name}"
+  name        = "jobs.${local.name_slug}"
+  description = "Log and secret access for jobs running under ${local.name_slug}"
   policy = templatefile("${path.module}/policies/jobs.json.tftpl", {
     log_group_resources = length(local.log_group_resources) > 0 ? local.log_group_resources : ["*"]
     partition           = data.aws_partition.current.partition
@@ -178,8 +178,8 @@ resource "aws_iam_role_policy_attachment" "jobs" {
 # --- Platform policy --------------------------------------------------------
 
 resource "aws_iam_policy" "platform" {
-  name        = "juliahub-compute.${var.name}"
-  description = "Platform-side access to compute roles, image registry, logs, and EFS for ${var.name}"
+  name        = "juliahub-compute.${local.name_slug}"
+  description = "Platform-side access to compute roles, image registry, logs, and EFS for ${local.name_slug}"
   policy = templatefile("${path.module}/policies/platform.json.tftpl", {
     compute_role_arns = [aws_iam_role.jobs.arn, aws_iam_role.datasets.arn, aws_iam_role.job_outputs.arn]
   })
@@ -197,8 +197,8 @@ resource "aws_iam_role_policy_attachment" "service_account_platform" {
 resource "aws_iam_policy" "logging" {
   count = local.create_logging ? 1 : 0
 
-  name        = "logging.${var.name}"
-  description = "Log group write and archive read access for ${var.name}"
+  name        = "logging.${local.name_slug}"
+  description = "Log group write and archive read access for ${local.name_slug}"
   policy = templatefile("${path.module}/policies/logging.json.tftpl", {
     log_group_resources   = local.log_group_resources
     log_archive_resources = local.log_archive_resources

@@ -113,6 +113,30 @@ compute:
 
 `compute.enabled` is gated by your Replicated license — check entitlement with JuliaHub support before setting it.
 
+## Naming
+
+`platform_hostname` is the hostname users load the platform from. It is the
+default CORS origin for direct dataset uploads, so it has to be the real
+hostname — a browser upload from a different origin is refused.
+
+It also seeds the names of the generated IAM roles, buckets and log groups, with
+dots flattened to hyphens for S3. Those have hard limits: 63 characters for a
+bucket name, 64 for an IAM role name, and the derived suffixes
+(`-datasets`, `-job-logs-archive`, `job-outputs.`) eat into the budget. A long
+hostname overflows them and fails the apply partway through, after the VPC and
+cluster already exist.
+
+Set `resource_name_prefix` when that is a risk. It replaces the derived prefix
+for resource names and leaves the CORS origin alone:
+
+```hcl
+platform_hostname    = "juliahub.long.subdomain.example.com"
+resource_name_prefix = "juliahub"
+```
+
+gives `juliahub-datasets`, `jobs.juliahub`, and a CORS origin of
+`juliahub.long.subdomain.example.com`.
+
 ## Prerequisites
 
 - Terraform >= 1.5.0

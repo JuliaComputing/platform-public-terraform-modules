@@ -1,11 +1,13 @@
 locals {
   # S3 bucket names cannot contain dots when accessed over TLS with virtual-host
-  # addressing, so a domain-style name is flattened to hyphens.
-  name_slug = replace(var.name, ".", "-")
+  # addressing, so a domain-style hostname is flattened to hyphens.
+  name_slug = var.resource_name_prefix != "" ? var.resource_name_prefix : replace(var.platform_hostname, ".", "-")
 
   datasets_bucket_name = var.datasets_bucket_name == "" ? "${local.name_slug}-datasets" : var.datasets_bucket_name
 
-  allowed_origins = length(var.allowed_origins) == 0 ? [var.name] : var.allowed_origins
+  # Deliberately the hostname, not the slug: this is a CORS origin, and a
+  # browser upload from anything else is refused.
+  allowed_origins = length(var.allowed_origins) == 0 ? [var.platform_hostname] : var.allowed_origins
 
   s3_prefixes = [
     var.datasets_s3_prefix,

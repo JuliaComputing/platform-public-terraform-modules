@@ -587,8 +587,31 @@ variable "create_compute" {
   default     = true
 }
 
-variable "compute_name" {
-  description = "Name identifying this install, used to name compute IAM roles and derive bucket names. Defaults to cluster_name; a domain such as juliahub.example.com is typical."
+variable "platform_hostname" {
+  description = <<-EOT
+    Hostname users load the platform from, e.g. juliahub.example.com. Defaults
+    to `cluster_name`.
+
+    This is the default CORS origin for direct dataset uploads, so it has to be
+    the real hostname — a browser upload from a different origin is refused.
+    It also seeds the default IAM, bucket and log group names, with dots
+    flattened to hyphens where S3 requires it; set `resource_name_prefix` if
+    those need to be shorter than the hostname allows.
+  EOT
+  type        = string
+  default     = ""
+}
+
+variable "resource_name_prefix" {
+  description = <<-EOT
+    Prefix for generated IAM role, bucket and log group names. Defaults to
+    `platform_hostname` with dots replaced by hyphens.
+
+    Set this when the hostname is too long for what it feeds: S3 bucket names
+    are capped at 63 characters and IAM role names at 64, and the derived
+    suffixes push a long hostname over, failing the apply partway through. It
+    does not affect the CORS origin.
+  EOT
   type        = string
   default     = ""
 }
@@ -606,13 +629,13 @@ variable "service_account_names" {
 }
 
 variable "datasets_bucket_name" {
-  description = "Name of the datasets bucket. Leave empty to derive it from compute_name."
+  description = "Name of the datasets bucket. Leave empty to derive it from resource_name_prefix."
   type        = string
   default     = ""
 }
 
 variable "allowed_origins" {
-  description = "Origins permitted to upload directly to the datasets bucket via CORS, without the scheme. Must include the platform hostname. Defaults to compute_name."
+  description = "Origins permitted to upload directly to the datasets bucket via CORS, without the scheme. Must include the platform hostname. Defaults to platform_hostname."
   type        = list(string)
   default     = []
 }
