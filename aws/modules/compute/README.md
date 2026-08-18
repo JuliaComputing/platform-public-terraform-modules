@@ -97,6 +97,36 @@ Statements passed this way are merged into the bucket policy alongside the modul
 
 Set `create_datasets_bucket = false` and pass `datasets_bucket_name`. The IAM policies are then scoped to that bucket, but its configuration — versioning, encryption, CORS, lifecycle — is yours to manage.
 
+## Provisioning IAM without terraform
+
+The policies this module attaches live as templates in [`policies/`](policies/), so they can be read and applied directly by anyone provisioning IAM another way — CloudFormation, the console, or an existing IAM pipeline.
+
+| File | Attached to | Purpose |
+|------|-------------|---------|
+| [`platform.json.tftpl`](policies/platform.json.tftpl) | `juliahub-compute.<name>` | Assume the compute roles, read the image registry, manage log groups, mount EFS |
+| [`datasets.json.tftpl`](policies/datasets.json.tftpl) | `datasets.<name>` and the platform role | Read and write the platform prefixes of the datasets bucket |
+| [`jobs.json.tftpl`](policies/jobs.json.tftpl) | `jobs.<name>` | Write job and audit log streams, manage job secrets |
+| [`job-outputs.json.tftpl`](policies/job-outputs.json.tftpl) | `job-outputs.<name>` | Multipart upload into the results prefix |
+| [`logging.json.tftpl`](policies/logging.json.tftpl) | the platform role | Write log streams, read log archives |
+
+They are terraform template files rather than plain JSON, so the substitutions are explicit. Each `${...}` is a value from your own account:
+
+| Placeholder | Value |
+|-------------|-------|
+| `datasets_bucket_arn` | ARN of the datasets bucket |
+| `datasets_list_prefixes` | Prefix globs the platform may list, e.g. `["datasets/*", "results/*"]` |
+| `datasets_object_arns` | Object ARNs under those prefixes |
+| `results_s3_prefix` | Results prefix, without a trailing slash |
+| `results_object_arn_glob` | Object ARN glob under the results prefix |
+| `log_group_resources` | Log group ARNs, each also with a `:*` suffixed form |
+| `log_archive_resources` | Log archive bucket ARN and its `/*` form |
+| `compute_role_arns` | ARNs of the jobs, datasets, and job-outputs roles |
+| `partition` / `account_id` | Your AWS partition and account ID |
+
+A `${jsonencode(...)}` placeholder expects a JSON array; a bare `${...}` expects a string.
+
+The two trust policies stay in [`iam.tf`](iam.tf) rather than here: they are built from typed principal blocks tied to the cluster OIDC provider, and are better read as terraform than transcribed by hand.
+
 ## Inputs
 
 See [`variables.tf`](variables.tf) for the full list with descriptions and defaults.

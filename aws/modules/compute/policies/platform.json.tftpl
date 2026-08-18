@@ -1,0 +1,51 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AssumeComputeRoles",
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": ${jsonencode(compute_role_arns)}
+    },
+    {
+      "Sid": "ImageRegistryRead",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage",
+        "ecr:DescribeImages",
+        "ecr:ListImages"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "LogGroupManagement",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateExportTask",
+        "logs:CreateLogGroup",
+        "logs:DescribeLogGroups",
+        "logs:DescribeExportTasks"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ElasticFileSystem",
+      "Effect": "Allow",
+      "Action": [
+        "elasticfilesystem:ClientMount",
+        "elasticfilesystem:ClientRootAccess",
+        "elasticfilesystem:ClientWrite",
+        "elasticfilesystem:CreateAccessPoint",
+        "elasticfilesystem:DescribeAccessPoints",
+        "elasticfilesystem:DescribeFileSystems",
+        "elasticfilesystem:DescribeMountTargets",
+        "elasticfilesystem:DescribeTags",
+        "elasticfilesystem:TagResource"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

@@ -110,38 +110,14 @@ resource "aws_iam_role" "job_outputs" {
 
 # --- Datasets policy --------------------------------------------------------
 
-data "aws_iam_policy_document" "datasets" {
-  statement {
-    sid       = "ListBucketScopedToPlatformPrefixes"
-    actions   = ["s3:ListBucket"]
-    resources = [local.datasets_bucket_arn]
-
-    condition {
-      test     = "StringLike"
-      variable = "s3:prefix"
-      values   = local.datasets_list_prefixes
-    }
-  }
-
-  statement {
-    sid = "ObjectAccessWithinPlatformPrefixes"
-    actions = [
-      "s3:PutObject",
-      "s3:GetObject",
-      "s3:GetObjectVersion",
-      "s3:DeleteObject",
-      "s3:GetObjectAttributes",
-      "s3:GetObjectTagging",
-      "s3:PutObjectTagging",
-    ]
-    resources = local.datasets_object_arns
-  }
-}
-
 resource "aws_iam_policy" "datasets" {
   name        = "datasets.${var.name}"
   description = "Access to the platform prefixes of the ${local.datasets_bucket_name} bucket"
-  policy      = data.aws_iam_policy_document.datasets.json
+  policy = templatefile("${path.module}/policies/datasets.json.tftpl", {
+    datasets_bucket_arn    = local.datasets_bucket_arn
+    datasets_list_prefixes = local.datasets_list_prefixes
+    datasets_object_arns   = local.datasets_object_arns
+  })
 
   tags = var.tags
 }
@@ -163,40 +139,14 @@ resource "aws_iam_role_policy_attachment" "service_account_datasets" {
 # The job runner assumes this role to mint short-lived credentials for job
 # sidecars uploading result files. A session policy narrows it further to a
 # single job's prefix at AssumeRole time.
-data "aws_iam_policy_document" "job_outputs" {
-  statement {
-    sid       = "ListBucketScopedToResultsPrefix"
-    actions   = ["s3:ListBucket"]
-    resources = [local.datasets_bucket_arn]
-
-    condition {
-      test     = "StringLike"
-      variable = "s3:prefix"
-      values   = ["${var.results_s3_prefix}/*"]
-    }
-  }
-
-  statement {
-    sid       = "ListMultipartUploads"
-    actions   = ["s3:ListBucketMultipartUploads"]
-    resources = [local.datasets_bucket_arn]
-  }
-
-  statement {
-    sid = "ObjectMultipartOps"
-    actions = [
-      "s3:PutObject",
-      "s3:AbortMultipartUpload",
-      "s3:ListMultipartUploadParts",
-    ]
-    resources = [local.results_object_arn_glob]
-  }
-}
-
 resource "aws_iam_policy" "job_outputs" {
   name        = "job-outputs.${var.name}"
   description = "Multipart upload access to the results prefix of the ${local.datasets_bucket_name} bucket"
-  policy      = data.aws_iam_policy_document.job_outputs.json
+  policy = templatefile("${path.module}/policies/job-outputs.json.tftpl", {
+    datasets_bucket_arn     = local.datasets_bucket_arn
+    results_s3_prefix       = var.results_s3_prefix
+    results_object_arn_glob = local.results_object_arn_glob
+  })
 
   tags = var.tags
 }
@@ -208,44 +158,14 @@ resource "aws_iam_role_policy_attachment" "job_outputs" {
 
 # --- Jobs policy ------------------------------------------------------------
 
-data "aws_iam_policy_document" "jobs" {
-  statement {
-    sid = "JobLogStreams"
-    actions = [
-      "logs:CreateLogStream",
-      "logs:DescribeLogStreams",
-      "logs:FilterLogEvents",
-      "logs:GetLogEvents",
-      "logs:PutLogEvents",
-    ]
-    resources = length(local.log_group_resources) > 0 ? local.log_group_resources : ["*"]
-  }
-
-  statement {
-    sid = "JobSecrets"
-    actions = [
-      "secretsmanager:CreateSecret",
-      "secretsmanager:DeleteSecret",
-      "secretsmanager:DescribeSecret",
-      "secretsmanager:GetSecretValue",
-      "secretsmanager:PutSecretValue",
-      "secretsmanager:TagResource",
-      "secretsmanager:UpdateSecret",
-    ]
-    resources = ["arn:${data.aws_partition.current.partition}:secretsmanager:*:${data.aws_caller_identity.current.account_id}:secret:*"]
-  }
-
-  statement {
-    sid       = "ListSecrets"
-    actions   = ["secretsmanager:ListSecrets"]
-    resources = ["*"]
-  }
-}
-
 resource "aws_iam_policy" "jobs" {
   name        = "jobs.${var.name}"
   description = "Log and secret access for jobs running under ${var.name}"
-  policy      = data.aws_iam_policy_document.jobs.json
+  policy = templatefile("${path.module}/policies/jobs.json.tftpl", {
+    log_group_resources = length(local.log_group_resources) > 0 ? local.log_group_resources : ["*"]
+    partition           = data.aws_partition.current.partition
+    account_id          = data.aws_caller_identity.current.account_id
+  })
 
   tags = var.tags
 }
@@ -257,61 +177,12 @@ resource "aws_iam_role_policy_attachment" "jobs" {
 
 # --- Platform policy --------------------------------------------------------
 
-data "aws_iam_policy_document" "platform" {
-  statement {
-    sid       = "AssumeComputeRoles"
-    actions   = ["sts:AssumeRole"]
-    resources = [aws_iam_role.jobs.arn, aws_iam_role.datasets.arn, aws_iam_role.job_outputs.arn]
-  }
-
-  # The platform resolves image digests and lists repositories under its own
-  # identity, and nodes pull images through these actions.
-  statement {
-    sid = "ImageRegistryRead"
-    actions = [
-      "ecr:GetAuthorizationToken",
-      "ecr:BatchCheckLayerAvailability",
-      "ecr:GetDownloadUrlForLayer",
-      "ecr:BatchGetImage",
-      "ecr:DescribeImages",
-      "ecr:ListImages",
-    ]
-    resources = ["*"]
-  }
-
-  statement {
-    sid = "LogGroupManagement"
-    actions = [
-      "logs:CreateExportTask",
-      "logs:CreateLogGroup",
-      "logs:DescribeLogGroups",
-      "logs:DescribeExportTasks",
-    ]
-    resources = ["*"]
-  }
-
-  # EFS backs the platform config and per-user data directories.
-  statement {
-    sid = "ElasticFileSystem"
-    actions = [
-      "elasticfilesystem:ClientMount",
-      "elasticfilesystem:ClientRootAccess",
-      "elasticfilesystem:ClientWrite",
-      "elasticfilesystem:CreateAccessPoint",
-      "elasticfilesystem:DescribeAccessPoints",
-      "elasticfilesystem:DescribeFileSystems",
-      "elasticfilesystem:DescribeMountTargets",
-      "elasticfilesystem:DescribeTags",
-      "elasticfilesystem:TagResource",
-    ]
-    resources = ["*"]
-  }
-}
-
 resource "aws_iam_policy" "platform" {
   name        = "juliahub-compute.${var.name}"
   description = "Platform-side access to compute roles, image registry, logs, and EFS for ${var.name}"
-  policy      = data.aws_iam_policy_document.platform.json
+  policy = templatefile("${path.module}/policies/platform.json.tftpl", {
+    compute_role_arns = [aws_iam_role.jobs.arn, aws_iam_role.datasets.arn, aws_iam_role.job_outputs.arn]
+  })
 
   tags = var.tags
 }
@@ -323,34 +194,15 @@ resource "aws_iam_role_policy_attachment" "service_account_platform" {
 
 # --- Logging policy ---------------------------------------------------------
 
-data "aws_iam_policy_document" "logging" {
-  count = local.create_logging ? 1 : 0
-
-  statement {
-    sid = "WriteLogStreams"
-    actions = [
-      "logs:DescribeLogStreams",
-      "logs:PutLogEvents",
-    ]
-    resources = local.log_group_resources
-  }
-
-  statement {
-    sid = "ReadLogArchives"
-    actions = [
-      "s3:ListBucket",
-      "s3:GetObject",
-    ]
-    resources = local.log_archive_resources
-  }
-}
-
 resource "aws_iam_policy" "logging" {
   count = local.create_logging ? 1 : 0
 
   name        = "logging.${var.name}"
   description = "Log group write and archive read access for ${var.name}"
-  policy      = data.aws_iam_policy_document.logging[0].json
+  policy = templatefile("${path.module}/policies/logging.json.tftpl", {
+    log_group_resources   = local.log_group_resources
+    log_archive_resources = local.log_archive_resources
+  })
 
   tags = var.tags
 }

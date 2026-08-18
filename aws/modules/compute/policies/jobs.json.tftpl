@@ -1,0 +1,37 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "JobLogStreams",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogStream",
+        "logs:DescribeLogStreams",
+        "logs:FilterLogEvents",
+        "logs:GetLogEvents",
+        "logs:PutLogEvents"
+      ],
+      "Resource": ${jsonencode(log_group_resources)}
+    },
+    {
+      "Sid": "JobSecrets",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:CreateSecret",
+        "secretsmanager:DeleteSecret",
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:PutSecretValue",
+        "secretsmanager:TagResource",
+        "secretsmanager:UpdateSecret"
+      ],
+      "Resource": "arn:${partition}:secretsmanager:*:${account_id}:secret:*"
+    },
+    {
+      "Sid": "ListSecrets",
+      "Effect": "Allow",
+      "Action": "secretsmanager:ListSecrets",
+      "Resource": "*"
+    }
+  ]
+}
