@@ -235,50 +235,50 @@ variable "additional_node_role_arns" {
 
 # --- Node group -------------------------------------------------------------
 
-variable "node_instance_type" {
+variable "critical_node_instance_type" {
   description = "EC2 instance type for the critical node group"
   type        = string
   default     = "t3.large"
 }
 
-variable "node_ami_id" {
+variable "critical_node_ami_id" {
   description = "AMI ID for the critical node group. Leave empty for the latest Bottlerocket AMI."
   type        = string
   default     = ""
 }
 
-variable "bootstrap_type" {
-  description = "Node bootstrap style matching the AMI family: BOTTLEROCKET, AL2023, or AMAZONLINUX2"
+variable "critical_node_bootstrap_type" {
+  description = "Bootstrap style for critical node group nodes, matching the AMI family: BOTTLEROCKET, AL2023, or AMAZONLINUX2"
   type        = string
   default     = "BOTTLEROCKET"
 }
 
-variable "node_group_desired_size" {
+variable "critical_node_group_desired_size" {
   description = "Desired number of nodes in the critical node group"
   type        = number
   default     = 2
 }
 
-variable "node_group_min_size" {
+variable "critical_node_group_min_size" {
   description = "Minimum number of nodes in the critical node group"
   type        = number
   default     = 2
 }
 
-variable "node_group_max_size" {
+variable "critical_node_group_max_size" {
   description = "Maximum number of nodes in the critical node group"
   type        = number
   default     = 10
 }
 
-variable "node_volume_size" {
-  description = "Size in GB of the node data volume"
+variable "critical_node_volume_size" {
+  description = "Size in GB of the data volume on critical node group nodes"
   type        = number
   default     = 100
 }
 
-variable "node_instance_additional_managed_policies" {
-  description = "Additional managed policy ARNs for the node instance role"
+variable "critical_node_additional_managed_policies" {
+  description = "Additional managed policy ARNs for the critical node group instance role"
   type        = list(string)
   default     = []
 }

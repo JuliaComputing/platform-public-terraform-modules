@@ -84,15 +84,15 @@ module "eks" {
   # rather than a module reference to avoid a dependency cycle.
   additional_node_role_arns = var.additional_node_role_arns
 
-  node_instance_type      = var.node_instance_type
-  node_ami_id             = var.node_ami_id
-  bootstrap_type          = var.bootstrap_type
-  node_group_desired_size = var.node_group_desired_size
-  node_group_min_size     = var.node_group_min_size
-  node_group_max_size     = var.node_group_max_size
-  node_volume_size        = var.node_volume_size
+  critical_node_instance_type      = var.critical_node_instance_type
+  critical_node_ami_id             = var.critical_node_ami_id
+  critical_node_bootstrap_type     = var.critical_node_bootstrap_type
+  critical_node_group_desired_size = var.critical_node_group_desired_size
+  critical_node_group_min_size     = var.critical_node_group_min_size
+  critical_node_group_max_size     = var.critical_node_group_max_size
+  critical_node_volume_size        = var.critical_node_volume_size
 
-  node_instance_additional_managed_policies = var.node_instance_additional_managed_policies
+  critical_node_additional_managed_policies = var.critical_node_additional_managed_policies
 
   critical_node_labels = var.critical_node_labels
   critical_node_taints = var.critical_node_taints

@@ -99,7 +99,7 @@ condition {
 
 ## Bootstrap types
 
-`bootstrap_type` must match the AMI family in `node_ami_id`:
+`critical_node_bootstrap_type` must match the AMI family in `critical_node_ami_id`:
 
 | Value | AMI family |
 |-------|-----------|
@@ -107,7 +107,7 @@ condition {
 | `AL2023` | Amazon Linux 2023 |
 | `AMAZONLINUX2` | Amazon Linux 2 |
 
-Leaving `node_ami_id` empty resolves the latest Bottlerocket AMI, so it pairs only with `BOTTLEROCKET`.
+Leaving `critical_node_ami_id` empty resolves the latest Bottlerocket AMI, so it pairs only with `BOTTLEROCKET`.
 
 ## Inputs
 

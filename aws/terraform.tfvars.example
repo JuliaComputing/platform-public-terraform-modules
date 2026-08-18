@@ -44,12 +44,12 @@ access_entries = [
 # Node Group Configuration
 # These nodes run the platform components and cluster addons. Job nodes are
 # provisioned separately by an autoscaler such as Karpenter.
-node_instance_type      = "t3.large"
-bootstrap_type          = "BOTTLEROCKET"
-node_group_desired_size = 2
-node_group_min_size     = 2
-node_group_max_size     = 10
-node_volume_size        = 100
+critical_node_instance_type      = "t3.large"
+critical_node_bootstrap_type          = "BOTTLEROCKET"
+critical_node_group_desired_size = 2
+critical_node_group_min_size     = 2
+critical_node_group_max_size     = 10
+critical_node_volume_size        = 100
 
 # Node roles created outside this module that also need cluster access. The
 # node group role and the Karpenter node role are registered automatically.

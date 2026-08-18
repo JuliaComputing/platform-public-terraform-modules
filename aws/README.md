@@ -400,5 +400,5 @@ See [`variables.tf`](variables.tf) for the full list with descriptions and defau
 | `availability_zones` | `["us-east-1a", "us-east-1c"]` | Must match `region` |
 | `kubernetes_version` | `1.33` | |
 | `vpc_cidr` | `192.168.0.0/16` | Must not overlap `service_ipv4_cidr` |
-| `node_instance_type` | `t3.large` | |
+| `critical_node_instance_type` | `t3.large` | |
 | `endpoint_public_access_cidrs` | `["0.0.0.0/0"]` | Narrow this in production |

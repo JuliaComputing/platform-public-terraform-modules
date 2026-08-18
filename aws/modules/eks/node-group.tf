@@ -1,13 +1,13 @@
 locals {
-  bootstrap_template      = "user-data-${lower(var.bootstrap_type)}.template"
-  node_ami_id             = var.node_ami_id == "" ? data.aws_ami.bottlerocket.id : var.node_ami_id
+  bootstrap_template      = "user-data-${lower(var.critical_node_bootstrap_type)}.template"
+  critical_node_ami_id    = var.critical_node_ami_id == "" ? data.aws_ami.bottlerocket.id : var.critical_node_ami_id
   critical_nodegroup_name = replace("${var.cluster_name}-critical-nodegroup-${var.kubernetes_version}", ".", "-")
 }
 
 resource "aws_launch_template" "critical" {
   name          = local.critical_nodegroup_name
-  instance_type = var.node_instance_type
-  image_id      = local.node_ami_id
+  instance_type = var.critical_node_instance_type
+  image_id      = local.critical_node_ami_id
 
   block_device_mappings {
     device_name = "/dev/xvdb"
@@ -15,7 +15,7 @@ resource "aws_launch_template" "critical" {
     ebs {
       iops        = 3000
       throughput  = 125
-      volume_size = var.node_volume_size
+      volume_size = var.critical_node_volume_size
       volume_type = "gp3"
       encrypted   = true
     }
@@ -72,9 +72,9 @@ resource "aws_eks_node_group" "critical" {
   }
 
   scaling_config {
-    desired_size = var.node_group_desired_size
-    max_size     = var.node_group_max_size
-    min_size     = var.node_group_min_size
+    desired_size = var.critical_node_group_desired_size
+    max_size     = var.critical_node_group_max_size
+    min_size     = var.critical_node_group_min_size
   }
 
   labels = var.critical_node_labels

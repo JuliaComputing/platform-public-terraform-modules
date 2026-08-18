@@ -157,7 +157,7 @@ resource "aws_iam_role_policy_attachment" "node" {
 }
 
 resource "aws_iam_role_policy_attachment" "node_additional" {
-  for_each = toset(var.node_instance_additional_managed_policies)
+  for_each = toset(var.critical_node_additional_managed_policies)
 
   policy_arn = each.value
   role       = aws_iam_role.node.name
