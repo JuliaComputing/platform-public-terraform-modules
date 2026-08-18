@@ -8,7 +8,7 @@ This is a self-contained root module. Apply it, point `kubectl` at the resulting
 
 | Component | Details |
 |-----------|---------|
-| VPC | Public and private subnets across two availability zones, internet gateway, one NAT gateway per public subnet |
+| VPC | Public and private subnets across two availability zones, internet gateway, one NAT gateway per public subnet. Optional — pass `vpc_id` with your own subnets instead |
 | VPC endpoints | ECR (interface) and S3 (gateway) by default; RDS and Bedrock optional |
 | EKS cluster | Control plane with API-based access entries, OIDC provider for IRSA |
 | Node group | A small "critical" node group for platform components and addons |
@@ -19,7 +19,26 @@ This is a self-contained root module. Apply it, point `kubectl` at the resulting
 | Load balancer IAM | IRSA role for the AWS Load Balancer Controller |
 | Compute resources | Datasets S3 bucket, audit and job log groups with S3 archives, and the IAM roles the platform assumes to run jobs |
 
-Each of these can be turned off — `create_rds`, `create_efs_config_directory`, `create_efs_userdata_directory`, `create_compute`, `create_karpenter_iam`, `create_alb_controller_iam` — if you manage them yourself.
+Every part of this is opt-out. Nothing here is required in order to use the
+rest, so the modules can take on as much or as little of the infrastructure as
+you want:
+
+| Turn off | With | Instead |
+|----------|------|---------|
+| VPC and subnets | `vpc_id`, `private_subnet_ids`, `public_subnet_ids` | Your existing VPC — see [Deploying into an existing VPC](#deploying-into-an-existing-vpc) |
+| PostgreSQL | `create_rds = false` | Your own RDS instance or Aurora cluster |
+| Config directory filesystem | `create_efs_config_directory = false` | An EFS filesystem you manage |
+| Userdata filesystem | `create_efs_userdata_directory = false` | An EFS filesystem you manage |
+| Compute resources | `create_compute = false` | Your own bucket, log groups and job IAM roles |
+| Karpenter IAM | `create_karpenter_iam = false` | Your own autoscaler, or IAM you manage |
+| Load balancer IAM | `create_alb_controller_iam = false` | IAM you manage |
+
+The submodules are also usable directly, without the root module, if you want
+only one or two pieces — see [Using the modules individually](#using-the-modules-individually).
+
+The EKS cluster itself is the one thing the root module always creates. To bring
+your own cluster and use the modules only for what the platform adds around it,
+call the submodules individually rather than the root module.
 
 ### Controllers are IAM-only
 
@@ -114,6 +133,61 @@ Then configure `kubectl`:
 ```bash
 aws eks update-kubeconfig --region us-east-1 --name juliahub
 ```
+
+## Deploying into an existing VPC
+
+Most enterprise accounts already have a VPC with the subnets, routing and egress
+the platform needs. Pass it in and the vpc submodule is skipped:
+
+```hcl
+module "juliahub" {
+  source = "github.com/JuliaComputing/platform-public-terraform-modules//aws"
+
+  cluster_name = "juliahub"
+  region       = "us-east-1"
+
+  vpc_id             = "vpc-0123456789abcdef0"
+  private_subnet_ids = ["subnet-0aaa...", "subnet-0bbb..."]
+  public_subnet_ids  = ["subnet-0ccc...", "subnet-0ddd..."]
+}
+```
+
+The VPC-shaping inputs (`vpc_cidr`, `public_subnet_cidrs`,
+`private_subnet_cidrs`, `availability_zones`, the `enable_*_vpc_endpoint` flags)
+are then ignored — routing, NAT and endpoints are yours to manage. Everything
+else is unchanged: EKS, EFS, RDS, the datasets bucket and the IAM roles are
+still created, in the subnets you named.
+
+Private subnets need outbound internet access, or VPC endpoints for ECR, S3 and
+CloudWatch Logs, or nodes cannot pull images.
+
+### Your subnets must carry the discovery tags
+
+This is the part that catches people out. The AWS Load Balancer Controller and
+Karpenter do not take a list of subnets — they **discover** subnets by tag:
+
+| Tag | On | Consumer | If missing |
+|-----|----|----------|------------|
+| `kubernetes.io/role/elb` | public subnets | AWS Load Balancer Controller | The platform Ingress never gets an ALB |
+| `kubernetes.io/role/internal-elb` | private subnets | AWS Load Balancer Controller | No internal load balancer is placed |
+| `karpenter.sh/discovery = <cluster_name>` | private subnets | Karpenter | No job nodes are ever provisioned |
+
+None of these produce an error at apply time. The cluster comes up, the pods run
+and the platform reports healthy — and then no load balancer appears, or jobs
+sit pending forever. When the modules create the VPC they apply these tags for
+you, which is why the failure only shows up on the bring-your-own-VPC path.
+
+There are two ways to handle it:
+
+**Let the modules tag your subnets** — set `tag_existing_subnets = true`. This is
+off by default because it means Terraform manages tags on resources it did not
+create, and `terraform destroy` will remove them again. If your subnets are
+shared with other workloads, or another team owns them, prefer the other option.
+
+**Tag them yourself** and leave `tag_existing_subnets = false`. The modules then
+check the tags at plan time and fail with a message naming the missing tag, so a
+mistake surfaces before anything is created. Set
+`validate_existing_subnet_tags = false` to skip the check.
 
 ## TLS
 

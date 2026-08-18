@@ -23,7 +23,20 @@ locals {
   )
 }
 
+locals {
+  create_vpc = var.vpc_id == null
+
+  vpc_id             = local.create_vpc ? module.vpc[0].vpc_id : var.vpc_id
+  private_subnet_ids = local.create_vpc ? module.vpc[0].private_subnet_ids : var.private_subnet_ids
+  public_subnet_ids  = local.create_vpc ? module.vpc[0].public_subnet_ids : var.public_subnet_ids
+  # The EKS control plane places ENIs in both public and private subnets.
+  all_subnet_ids = local.create_vpc ? module.vpc[0].subnet_ids : concat(var.private_subnet_ids, var.public_subnet_ids)
+}
+
 module "vpc" {
+  # Gated on vpc_id rather than the subnet lists: count must be known at plan
+  # time, and a caller may legitimately compute subnet IDs from another module.
+  count  = local.create_vpc ? 1 : 0
   source = "./modules/vpc"
 
   cluster_name = var.cluster_name
@@ -54,11 +67,11 @@ module "eks" {
   kubernetes_version = var.kubernetes_version
   region             = var.region
 
-  vpc_id = module.vpc.vpc_id
+  vpc_id = local.vpc_id
   # The control plane places ENIs in both public and private subnets; nodes run
   # only in the private subnets.
-  control_plane_subnet_ids = module.vpc.subnet_ids
-  node_group_subnet_ids    = module.vpc.private_subnet_ids
+  control_plane_subnet_ids = local.all_subnet_ids
+  node_group_subnet_ids    = local.private_subnet_ids
 
   service_ipv4_cidr            = var.service_ipv4_cidr
   endpoint_public_access       = var.endpoint_public_access
@@ -111,7 +124,7 @@ module "rds" {
   max_allocated_storage = var.rds_max_allocated_storage
   multi_az              = var.rds_multi_az
 
-  subnet_ids = module.vpc.private_subnet_ids
+  subnet_ids = local.private_subnet_ids
   # Only workloads in the cluster reach the database.
   allow_from_security_group_ids = [module.eks.cluster_security_group_id]
 
@@ -176,8 +189,8 @@ module "efs_config" {
   name    = var.cluster_name
   purpose = "config"
 
-  vpc_id     = module.vpc.vpc_id
-  subnet_ids = module.vpc.private_subnet_ids
+  vpc_id     = local.vpc_id
+  subnet_ids = local.private_subnet_ids
 
   # Only workloads in the cluster mount the filesystem.
   allow_from_security_group_ids = [module.eks.cluster_security_group_id]
@@ -200,8 +213,8 @@ module "efs_userdata" {
   name    = var.cluster_name
   purpose = "userdata"
 
-  vpc_id     = module.vpc.vpc_id
-  subnet_ids = module.vpc.private_subnet_ids
+  vpc_id     = local.vpc_id
+  subnet_ids = local.private_subnet_ids
 
   allow_from_security_group_ids = [module.eks.cluster_security_group_id]
   restrict_mount_to_role_arns   = var.restrict_efs_mounts_to_node_roles ? local.efs_mount_role_arns : []

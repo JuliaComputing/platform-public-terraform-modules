@@ -18,6 +18,91 @@ variable "tags" {
 
 # --- Networking -------------------------------------------------------------
 
+# --- Existing VPC ------------------------------------------------------------
+
+variable "vpc_id" {
+  description = <<-EOT
+    ID of an existing VPC to deploy into. Leave null (the default) to have the
+    modules create one.
+
+    When set, `private_subnet_ids` and `public_subnet_ids` are required, the vpc
+    submodule is not instantiated, and the VPC-shaping inputs (`vpc_cidr`,
+    `public_subnet_cidrs`, `private_subnet_cidrs`, `availability_zones`, the
+    `enable_*_vpc_endpoint` flags) are ignored — the network is yours to manage.
+
+    Your subnets must carry the discovery tags the cluster add-ons select on;
+    see `tag_existing_subnets`. Without them the platform installs and reports
+    healthy, but no load balancer is provisioned and no job nodes are launched.
+  EOT
+  type        = string
+  default     = null
+}
+
+variable "private_subnet_ids" {
+  description = <<-EOT
+    Private subnet IDs to run nodes, EFS mount targets and the database in.
+    Required when `vpc_id` is set, ignored otherwise. At least two, in different
+    availability zones.
+  EOT
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = length(var.private_subnet_ids) == 0 || length(var.private_subnet_ids) >= 2
+    error_message = "private_subnet_ids needs at least two subnets, in different availability zones."
+  }
+}
+
+variable "public_subnet_ids" {
+  description = <<-EOT
+    Public subnet IDs for the load balancer. Required when `vpc_id` is set,
+    ignored otherwise. At least two, in different availability zones. For an
+    internal-only deployment these may be further private subnets, provided they
+    carry `kubernetes.io/role/internal-elb`.
+  EOT
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = length(var.public_subnet_ids) == 0 || length(var.public_subnet_ids) >= 2
+    error_message = "public_subnet_ids needs at least two subnets, in different availability zones."
+  }
+}
+
+variable "tag_existing_subnets" {
+  description = <<-EOT
+    Apply the discovery tags the cluster add-ons need to the subnets passed in
+    `private_subnet_ids` and `public_subnet_ids`. Only used when `vpc_id` is set.
+
+    The tags are `kubernetes.io/role/elb` on public subnets,
+    `kubernetes.io/role/internal-elb` and `karpenter.sh/discovery` on private
+    subnets. The AWS Load Balancer Controller and Karpenter select on these; if
+    they are absent nothing fails at apply time, but no ALB is created for the
+    Ingress and Karpenter provisions no job nodes.
+
+    Off by default because it means Terraform manages tags on subnets it did not
+    create — and `terraform destroy` will remove them again. Leave it off and
+    apply the tags yourself if that is not acceptable in your account; the
+    modules validate that they are present either way.
+  EOT
+  type        = bool
+  default     = false
+}
+
+variable "validate_existing_subnet_tags" {
+  description = <<-EOT
+    Fail at plan time when the subnets passed in `private_subnet_ids` and
+    `public_subnet_ids` are missing the discovery tags described in
+    `tag_existing_subnets`. Only used when `vpc_id` is set and
+    `tag_existing_subnets` is false.
+
+    Turning this off skips the check; the deployment will then apply cleanly and
+    fail at runtime instead.
+  EOT
+  type        = bool
+  default     = true
+}
+
 variable "vpc_cidr" {
   description = "Primary CIDR block for the VPC"
   type        = string

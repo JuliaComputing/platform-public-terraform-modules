@@ -1,17 +1,17 @@
 # Networking outputs
 output "vpc_id" {
   description = "ID of the VPC"
-  value       = module.vpc.vpc_id
+  value       = local.vpc_id
 }
 
 output "public_subnet_ids" {
   description = "IDs of the public subnets"
-  value       = module.vpc.public_subnet_ids
+  value       = local.public_subnet_ids
 }
 
 output "private_subnet_ids" {
   description = "IDs of the private subnets"
-  value       = module.vpc.private_subnet_ids
+  value       = local.private_subnet_ids
 }
 
 output "region" {
@@ -211,11 +211,11 @@ output "deployment_summary" {
   description = "Summary of deployed resources"
   value = {
     region             = var.region
-    vpc_id             = module.vpc.vpc_id
+    vpc_id             = local.vpc_id
     cluster_name       = module.eks.cluster_name
     cluster_version    = module.eks.cluster_version
     cluster_endpoint   = module.eks.cluster_endpoint
-    private_subnet_ids = module.vpc.private_subnet_ids
+    private_subnet_ids = local.private_subnet_ids
     node_group_name    = module.eks.node_group_name
   }
 }
