@@ -4,6 +4,8 @@ Terraform for the AWS infrastructure a self-managed JuliaHub Platform install ne
 
 This is a self-contained root module. Apply it, point `kubectl` at the resulting cluster, install the Karpenter and load balancer controller charts, then install the platform chart.
 
+The [AWS installation guide](https://help.juliahub.com/juliahub/stable/installation/aws_helm/) walks through that end to end — prerequisites, the Helm values these outputs feed, TLS, DNS and verification. This README covers the Terraform side; start with the guide if you are installing the platform for the first time.
+
 ## What this creates
 
 | Component | Details |
@@ -57,7 +59,7 @@ These are outside the scope of this module and must be provisioned separately:
 - **A TLS certificate**, unless you use the optional [modules/acm-certificate](modules/acm-certificate/). See below.
 - **Object scanning** — the datasets bucket has hooks for wiring up a scanner of your own; see [modules/compute](modules/compute/).
 
-See the [AWS installation guide](https://help.juliahub.com/juliahub/stable/installation/) for how these map to Helm values.
+See the [AWS installation guide](https://help.juliahub.com/juliahub/stable/installation/aws_helm/) for how these map to Helm values.
 
 ## Mapping outputs to Helm values
 

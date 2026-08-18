@@ -8,6 +8,8 @@ This Terraform project deploys a complete Azure infrastructure for hosting the J
 - **Azure Blob Storage** for data and backups
 - **Virtual Network** with subnets, NSGs, and private endpoints
 
+The [Azure installation guide](https://help.juliahub.com/juliahub/stable/installation/azure_helm/) walks through the whole install — prerequisites, the Helm values these outputs feed, TLS, DNS and verification. This README covers the Terraform side; start with the guide if you are installing the platform for the first time.
+
 ## Architecture
 
 ```

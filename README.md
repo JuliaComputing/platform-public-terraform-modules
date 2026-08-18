@@ -11,6 +11,16 @@ Reusable Terraform modules for deploying the [JuliaHub](https://juliahub.com) pl
 
 Both modules provision a cluster, a database, and shared storage. On AWS the cluster controllers (Karpenter, the load balancer controller) have no EKS managed add-on, so their IAM is created but the charts are installed with Helm — see [aws/README.md](aws/README.md) for what is left to you and how each output maps to a Helm value.
 
+## Installation guides
+
+These modules provision the infrastructure; the installation guides cover the
+whole install, including the Helm values these outputs feed:
+
+- [AWS (Helm)](https://help.juliahub.com/juliahub/stable/installation/aws_helm/)
+- [Azure (Helm)](https://help.juliahub.com/juliahub/stable/installation/azure_helm/)
+
+Start there if you are installing the platform for the first time.
+
 ## Usage
 
 Each cloud module is a self-contained Terraform root module. See the README in the respective directory for prerequisites, configuration, and deployment instructions.
