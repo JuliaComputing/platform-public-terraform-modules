@@ -1,0 +1,32 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListBucketScopedToResultsPrefix",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "${datasets_bucket_arn}",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": "${results_s3_prefix}/*"
+        }
+      }
+    },
+    {
+      "Sid": "ListMultipartUploads",
+      "Effect": "Allow",
+      "Action": "s3:ListBucketMultipartUploads",
+      "Resource": "${datasets_bucket_arn}"
+    },
+    {
+      "Sid": "ObjectMultipartOps",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:AbortMultipartUpload",
+        "s3:ListMultipartUploadParts"
+      ],
+      "Resource": "${results_object_arn_glob}"
+    }
+  ]
+}

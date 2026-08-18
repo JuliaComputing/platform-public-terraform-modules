@@ -1,0 +1,13 @@
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=kubernetesbootstrapscript
+
+--kubernetesbootstrapscript
+Content-Type: text/x-shellscript
+Content-Type: charset="us-ascii"
+
+#!/bin/bash
+/etc/eks/bootstrap.sh ${cluster_name} \
+  --apiserver-endpoint '${api_server}' \
+  --b64-cluster-ca '${cluster_cert}'
+
+--kubernetesbootstrapscript--
