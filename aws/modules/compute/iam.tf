@@ -219,6 +219,8 @@ resource "aws_iam_policy" "platform" {
   description = "Platform-side access to compute roles, image registry, logs, and EFS for ${local.name_slug}"
   policy = templatefile("${path.module}/policies/platform.json.tftpl", {
     compute_role_arns = [aws_iam_role.jobs.arn, aws_iam_role.datasets.arn, aws_iam_role.job_outputs.arn]
+    partition         = data.aws_partition.current.partition
+    account_id        = data.aws_caller_identity.current.account_id
   })
 
   tags = var.tags

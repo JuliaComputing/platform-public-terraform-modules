@@ -32,6 +32,26 @@
       "Resource": "*"
     },
     {
+      "Sid": "PlatformSecrets",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:CreateSecret",
+        "secretsmanager:DeleteSecret",
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:PutSecretValue",
+        "secretsmanager:TagResource",
+        "secretsmanager:UpdateSecret"
+      ],
+      "Resource": "arn:${partition}:secretsmanager:*:${account_id}:secret:*"
+    },
+    {
+      "Sid": "PlatformListSecrets",
+      "Effect": "Allow",
+      "Action": "secretsmanager:ListSecrets",
+      "Resource": "*"
+    },
+    {
       "Sid": "ElasticFileSystem",
       "Effect": "Allow",
       "Action": [
