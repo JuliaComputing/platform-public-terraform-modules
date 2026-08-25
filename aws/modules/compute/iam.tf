@@ -82,6 +82,43 @@ data "aws_iam_policy_document" "assumable_role_trust" {
       identifiers = local.trusted_role_arns
     }
   }
+
+  # Also trust the service accounts directly, not only through the
+  # juliahub-compute role above.
+  #
+  # A pod assumes juliahub-compute via IRSA and would then assume this role from
+  # it. That second hop is role chaining, which AWS caps at one hour whatever
+  # max_session_duration says, so a request for longer fails outright:
+  #
+  #     ValidationError -- The requested DurationSeconds exceeds the 1 hour
+  #     session limit for roles assumed by role chaining.
+  #
+  # which is how dataset upload credentials failed: the platform asks for a
+  # session as long as the role allows, and STS refused. Trusting the OIDC
+  # provider here lets the pod assume this role in one hop, so the role's own
+  # max_session_duration applies. The juliahub-compute path is left in place, so
+  # anything already relying on it is unaffected.
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [local.oidc_provider_arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_provider}:sub"
+      values   = [for sa in var.service_account_names : "system:serviceaccount:${var.service_account_namespace}:${sa}"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_provider}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
 }
 
 resource "aws_iam_role" "jobs" {
