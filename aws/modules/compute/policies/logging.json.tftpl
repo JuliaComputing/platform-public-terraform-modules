@@ -12,6 +12,15 @@
       "Resource": ${jsonencode(log_group_resources)}
     },
     {
+      "Sid": "ReadLogStreams",
+      "Effect": "Allow",
+      "Action": [
+        "logs:FilterLogEvents",
+        "logs:GetLogEvents"
+      ],
+      "Resource": ${jsonencode(log_group_resources)}
+    },
+    {
       "Sid": "ReadLogArchives",
       "Effect": "Allow",
       "Action": [
