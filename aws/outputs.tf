@@ -201,6 +201,16 @@ output "job_log_group_name" {
   value       = one(module.compute[*].job_log_group_name)
 }
 
+output "audit_log_archive_bucket_name" {
+  description = "Name of the audit log archive bucket, or null when logging is disabled. Exposed so a teardown can empty it before destroy: force_destroy deletes objects serially and stalls on buckets holding many versions."
+  value       = one(module.compute[*].audit_log_archive_bucket_name)
+}
+
+output "job_log_archive_bucket_name" {
+  description = "Name of the job log archive bucket, or null when logging is disabled. Exposed so a teardown can empty it before destroy: force_destroy deletes objects serially and stalls on buckets holding many versions."
+  value       = one(module.compute[*].job_log_archive_bucket_name)
+}
+
 # Convenience
 output "kubeconfig_command" {
   description = "Command to add this cluster to your local kubeconfig"
