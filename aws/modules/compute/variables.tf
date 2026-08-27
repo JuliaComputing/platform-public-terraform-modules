@@ -56,9 +56,9 @@ variable "service_account_namespace" {
 }
 
 variable "service_account_names" {
-  description = "Service accounts in the platform namespace permitted to assume the compute IRSA role. Both the platform service account and the job-runner service account carry the role annotation, so both are trusted by default."
+  description = "Service accounts in the platform namespace permitted to assume the compute IRSA role. The platform, job-runner and Fluent Bit service accounts all carry the role annotation, so all three are trusted by default."
   type        = list(string)
-  default     = ["juliahub-platform", "juliarun"]
+  default     = ["juliahub-platform", "juliarun", "fluent-bit"]
 }
 
 # --- Datasets bucket --------------------------------------------------------

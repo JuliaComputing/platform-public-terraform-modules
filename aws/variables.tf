@@ -623,9 +623,9 @@ variable "service_account_namespace" {
 }
 
 variable "service_account_names" {
-  description = "Service accounts in the platform namespace permitted to assume the compute IRSA role"
+  description = "Service accounts in the platform namespace permitted to assume the compute IRSA role. Includes fluent-bit, which the logging-fluentbit subchart runs as."
   type        = list(string)
-  default     = ["juliahub-platform", "juliarun"]
+  default     = ["juliahub-platform", "juliarun", "fluent-bit"]
 }
 
 variable "datasets_bucket_name" {
