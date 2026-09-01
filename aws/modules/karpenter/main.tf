@@ -47,7 +47,8 @@ resource "aws_iam_role" "node" {
   name               = local.node_role_name
   assume_role_policy = data.aws_iam_policy_document.node_assume_role.json
 
-  tags = var.tags
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "node" {
@@ -232,7 +233,8 @@ resource "aws_iam_role" "controller" {
   name               = local.controller_role_name
   assume_role_policy = data.aws_iam_policy_document.controller_assume_role.json
 
-  tags = var.tags
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = var.tags
 }
 
 resource "aws_iam_role_policy" "controller" {

@@ -67,7 +67,8 @@ resource "aws_iam_role" "service_account" {
   name               = "juliahub-compute.${local.name_slug}"
   assume_role_policy = data.aws_iam_policy_document.service_account_trust.json
 
-  tags = var.tags
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = var.tags
 }
 
 # --- Trust policy shared by the assumable roles -----------------------------
@@ -126,7 +127,8 @@ resource "aws_iam_role" "jobs" {
   assume_role_policy   = data.aws_iam_policy_document.assumable_role_trust.json
   max_session_duration = var.jobs_role_max_session_duration
 
-  tags = var.tags
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = var.tags
 }
 
 resource "aws_iam_role" "datasets" {
@@ -134,7 +136,8 @@ resource "aws_iam_role" "datasets" {
   assume_role_policy   = data.aws_iam_policy_document.assumable_role_trust.json
   max_session_duration = var.datasets_role_max_session_duration
 
-  tags = var.tags
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = var.tags
 }
 
 resource "aws_iam_role" "job_outputs" {
@@ -142,7 +145,8 @@ resource "aws_iam_role" "job_outputs" {
   assume_role_policy   = data.aws_iam_policy_document.assumable_role_trust.json
   max_session_duration = var.job_outputs_role_max_session_duration
 
-  tags = var.tags
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = var.tags
 }
 
 # --- Datasets policy --------------------------------------------------------

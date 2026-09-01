@@ -46,6 +46,20 @@ variable "role_name" {
   default     = ""
 }
 
+variable "permissions_boundary_arn" {
+  description = <<-EOT
+    ARN of an IAM permissions boundary to attach to every IAM role this module
+    creates. Leave null to create roles without a boundary.
+
+    Set this in accounts where iam:CreateRole is only permitted when the new
+    role carries an approved boundary, which is a common guardrail in
+    centrally governed AWS organizations. Without it the apply fails on the
+    first role with AccessDenied even though the caller holds iam:CreateRole.
+  EOT
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Tags to apply to the IAM role"
   type        = map(string)
@@ -97,7 +111,8 @@ resource "aws_iam_role" "_" {
   name               = local.role_name
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 
-  tags = var.tags
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = var.tags
 }
 
 # Vendored from the upstream project so the permissions the controller needs

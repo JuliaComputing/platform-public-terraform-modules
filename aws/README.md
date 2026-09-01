@@ -215,6 +215,41 @@ check the tags at plan time and fail with a message naming the missing tag, so a
 mistake surfaces before anything is created. Set
 `validate_existing_subnet_tags = false` to skip the check.
 
+## IAM permissions boundaries
+
+Centrally governed AWS accounts often allow `iam:CreateRole` only when the role
+being created carries an approved permissions boundary. The permission is
+granted with a condition on the request:
+
+```json
+{
+  "Effect": "Allow",
+  "Action": ["iam:CreateRole", "iam:UpdateRole", "iam:DeleteRole"],
+  "Resource": "*",
+  "Condition": {
+    "ForAnyValue:StringEquals": {
+      "iam:PermissionsBoundary": ["arn:aws:iam::<account>:policy/<approved-boundary>"]
+    }
+  }
+}
+```
+
+Because the condition is on the request rather than the caller, an apply into
+such an account fails on the first IAM role with `AccessDenied` even though the
+principal holds `iam:CreateRole`. Set `permissions_boundary_arn` and every role
+the configuration creates carries the boundary:
+
+```hcl
+permissions_boundary_arn = "arn:aws:iam::123456789012:policy/my-boundary"
+```
+
+The boundary caps what a role may do; it grants nothing. Make sure the one you
+name permits what the platform's roles need — EKS, EC2, S3, EFS, SQS and
+CloudWatch Logs actions, as described in [IRSA](#irsa) and the module READMEs —
+or the cluster will come up with roles that cannot do their work.
+
+Leave the variable unset and no boundary is attached, which is the default.
+
 ## TLS
 
 TLS terminates at the ALB, not in the cluster. The platform serves plain HTTP behind it, so the chart needs `offloadTLS: true` and no `tlsFullchainPem` / `tlsPrivkeyPem`.
@@ -402,3 +437,4 @@ See [`variables.tf`](variables.tf) for the full list with descriptions and defau
 | `vpc_cidr` | `192.168.0.0/16` | Must not overlap `service_ipv4_cidr` |
 | `critical_node_instance_type` | `t3.large` | |
 | `endpoint_public_access_cidrs` | `["0.0.0.0/0"]` | Narrow this in production |
+| `permissions_boundary_arn` | `null` | IAM permissions boundary for every role created; required in some governed accounts |

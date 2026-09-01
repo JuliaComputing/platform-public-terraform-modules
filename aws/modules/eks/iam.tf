@@ -61,7 +61,8 @@ resource "aws_iam_role" "cluster" {
   assume_role_policy   = data.aws_iam_policy_document.cluster_assume_role.json
   max_session_duration = 3600
 
-  tags = var.tags
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "cluster_eks_cluster" {
@@ -81,7 +82,8 @@ resource "aws_iam_role" "vpc_cni" {
   assume_role_policy   = data.aws_iam_policy_document.irsa_assume_role["vpc_cni"].json
   max_session_duration = 3600
 
-  tags = var.tags
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "vpc_cni" {
@@ -96,7 +98,8 @@ resource "aws_iam_role" "ebs_csi" {
   assume_role_policy   = data.aws_iam_policy_document.irsa_assume_role["ebs_csi"].json
   max_session_duration = 3600
 
-  tags = var.tags
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "ebs_csi" {
@@ -113,7 +116,8 @@ resource "aws_iam_role" "efs_csi" {
   assume_role_policy   = data.aws_iam_policy_document.irsa_assume_role["efs_csi"].json
   max_session_duration = 3600
 
-  tags = var.tags
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "efs_csi" {
@@ -142,7 +146,8 @@ resource "aws_iam_role" "node" {
   assume_role_policy   = data.aws_iam_policy_document.node_assume_role.json
   max_session_duration = 3600
 
-  tags = var.tags
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "node" {

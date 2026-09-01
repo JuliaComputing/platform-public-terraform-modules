@@ -215,6 +215,20 @@ variable "alarm_low_storage_threshold_bytes" {
   default     = 5e8
 }
 
+variable "permissions_boundary_arn" {
+  description = <<-EOT
+    ARN of an IAM permissions boundary to attach to every IAM role this module
+    creates. Leave null to create roles without a boundary.
+
+    Set this in accounts where iam:CreateRole is only permitted when the new
+    role carries an approved boundary, which is a common guardrail in
+    centrally governed AWS organizations. Without it the apply fails on the
+    first role with AccessDenied even though the caller holds iam:CreateRole.
+  EOT
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Tags to apply to all resources created by this module"
   type        = map(string)

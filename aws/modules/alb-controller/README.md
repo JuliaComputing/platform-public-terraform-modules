@@ -92,6 +92,7 @@ To refresh it, download the file for the controller version you run and commit t
 | `namespace` | `kube-system` | Namespace the controller runs in |
 | `service_account_name` | `aws-load-balancer-controller` | Service account name |
 | `role_name` | derived | IAM role name |
+| `permissions_boundary_arn` | `null` | IAM permissions boundary to attach to the role |
 | `tags` | `{}` | Tags for the role |
 
 ## Outputs

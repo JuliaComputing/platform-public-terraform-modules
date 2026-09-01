@@ -108,7 +108,8 @@ module "eks" {
 
   enable_karpenter_discovery_tag = var.enable_karpenter_discovery_tag
 
-  tags = local.common_tags
+  permissions_boundary_arn = var.permissions_boundary_arn
+  tags                     = local.common_tags
 }
 
 module "rds" {
@@ -135,7 +136,8 @@ module "rds" {
 
   alarm_sns_topic_arns = var.alarm_sns_topic_arns
 
-  tags = local.common_tags
+  permissions_boundary_arn = var.permissions_boundary_arn
+  tags                     = local.common_tags
 }
 
 module "karpenter" {
@@ -152,7 +154,8 @@ module "karpenter" {
 
   create_interruption_queue = var.karpenter_interruption_queue
 
-  tags = local.common_tags
+  permissions_boundary_arn = var.permissions_boundary_arn
+  tags                     = local.common_tags
 }
 
 module "alb_controller" {
@@ -167,7 +170,8 @@ module "alb_controller" {
   namespace            = var.alb_controller_namespace
   service_account_name = var.alb_controller_service_account_name
 
-  tags = local.common_tags
+  permissions_boundary_arn = var.permissions_boundary_arn
+  tags                     = local.common_tags
 }
 
 locals {
@@ -256,5 +260,6 @@ module "compute" {
 
   additional_trusted_role_arns = var.additional_trusted_role_arns
 
-  tags = local.common_tags
+  permissions_boundary_arn = var.permissions_boundary_arn
+  tags                     = local.common_tags
 }
