@@ -32,6 +32,12 @@ service_ipv4_cidr  = "10.100.0.0/16" # must not overlap vpc_cidr
 endpoint_public_access       = true
 endpoint_public_access_cidrs = ["0.0.0.0/0"]
 
+# IAM permissions boundary attached to every role created here. Required in
+# accounts where iam:CreateRole is conditioned on the new role carrying an
+# approved boundary; without it the apply fails on the first role. Leave unset
+# to create roles without a boundary. See README, "IAM permissions boundaries".
+# permissions_boundary_arn = "arn:aws:iam::111122223333:policy/my-boundary"
+
 # Additional IAM principals granted cluster admin. The principal running
 # terraform apply is granted admin automatically.
 access_entries = [

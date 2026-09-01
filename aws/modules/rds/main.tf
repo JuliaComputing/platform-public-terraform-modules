@@ -106,7 +106,8 @@ resource "aws_iam_role" "monitoring" {
   name_prefix        = "${substr(var.identifier, 0, 24)}-rds-mon-"
   assume_role_policy = data.aws_iam_policy_document.monitoring_assume_role[0].json
 
-  tags = var.tags
+  permissions_boundary = var.permissions_boundary_arn
+  tags                 = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "monitoring" {
