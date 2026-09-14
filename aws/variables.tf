@@ -69,6 +69,27 @@ variable "public_subnet_ids" {
   }
 }
 
+variable "control_plane_subnet_ids" {
+  description = <<-EOT
+    Subnet IDs the EKS control plane places its ENIs in. Leave null to use every
+    subnet passed in `private_subnet_ids` and `public_subnet_ids`, which is the
+    default.
+
+    Set this when only some of your subnets are reachable from the networks that
+    need to talk to the API server privately. The private endpoint resolves to
+    these ENIs, so a client can only reach it if it has a route to the subnets
+    they sit in. At least two subnets, in different availability zones. See
+    README, "Choosing the control plane subnets".
+  EOT
+  type        = list(string)
+  default     = null
+
+  validation {
+    condition     = var.control_plane_subnet_ids == null || length(var.control_plane_subnet_ids) >= 2
+    error_message = "control_plane_subnet_ids needs at least two subnets, in different availability zones."
+  }
+}
+
 variable "tag_existing_subnets" {
   description = <<-EOT
     Apply the discovery tags the cluster add-ons need to the subnets passed in

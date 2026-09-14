@@ -215,6 +215,24 @@ check the tags at plan time and fail with a message naming the missing tag, so a
 mistake surfaces before anything is created. Set
 `validate_existing_subnet_tags = false` to skip the check.
 
+### Choosing the control plane subnets
+
+By default the control plane places its ENIs in every subnet you passed, private and public alike. That is the right default, and most deployments should leave it alone. Nodes are unaffected either way — they always run in `private_subnet_ids`.
+
+It matters when your VPC mixes routable and non-routable address space, which is common in a shared or centrally allocated VPC. The private API server endpoint is DNS that resolves, inside the VPC, to the addresses of those ENIs. A client can therefore only reach it if it has a route to the subnet the ENI landed in. If the control plane drew an ENI from a range your corporate network does not route, `kubectl` from that network fails intermittently — once for every DNS answer that points at the unreachable ENI — while everything inside the VPC keeps working normally. Set `control_plane_subnet_ids` to the subnets your clients can actually reach:
+
+```hcl
+control_plane_subnet_ids = ["subnet-0aaa...", "subnet-0bbb..."]
+```
+
+Three constraints, all of them enforced by AWS rather than by this module:
+
+- **At least two subnets, in different availability zones.**
+- **The list must still cover every availability zone the cluster was created with.** AWS lets you change the subnets of a running cluster, and lets you remove subnets, but not the last subnet in an AZ the cluster already uses. On a new cluster this does not apply — the AZs are whatever you name here.
+- **Each subnet needs free addresses.** The control plane takes at least one ENI per AZ and needs headroom to replace them, so a nearly-full /27 is a poor choice.
+
+Changing this on an existing cluster is an in-place update from AWS provider 5.32.1 onward. Earlier providers marked `subnet_ids` as forcing replacement, so on an older pinned provider the same edit plans a cluster destroy. Read the plan before applying it.
+
 ## IAM permissions boundaries
 
 Centrally governed AWS accounts often allow `iam:CreateRole` only when the role
@@ -375,7 +393,7 @@ resource "aws_vpc_security_group_ingress_rule" "kubectl" {
 }
 ```
 
-Two things to check before disabling public access, because both are invisible while the public endpoint is still open. Anything that runs `terraform apply`, `helm`, or `kubectl` from outside the VPC — a CI runner in particular — needs to be moved inside it or it loses its path to the cluster. And where not every subnet in the VPC is routable from where your clients sit, confirm the subnets the control plane drew its ENIs from are ones they can actually reach.
+Two things to check before disabling public access, because both are invisible while the public endpoint is still open. Anything that runs `terraform apply`, `helm`, or `kubectl` from outside the VPC — a CI runner in particular — needs to be moved inside it or it loses its path to the cluster. And where not every subnet in the VPC is routable from where your clients sit, confirm the subnets the control plane drew its ENIs from are ones they can actually reach — see [Choosing the control plane subnets](#choosing-the-control-plane-subnets).
 
 `endpoint_public_access_cidrs` narrows the public endpoint to named ranges. It is a weaker control than it appears if the cluster has no private endpoint yet: nodes reach the API server over the public endpoint in that case, egressing through a NAT gateway, so the allowlist must also contain that gateway's public addresses or every node is locked out.
 
@@ -463,4 +481,5 @@ See [`variables.tf`](variables.tf) for the full list with descriptions and defau
 | `critical_node_instance_type` | `t3.large` | |
 | `endpoint_public_access_cidrs` | `["0.0.0.0/0"]` | Narrow this in production |
 | `endpoint_private_access` | `false` | Enable before disabling public access; both false is rejected |
+| `control_plane_subnet_ids` | `null` | Restrict where the control plane places its ENIs; defaults to every subnet given |
 | `permissions_boundary_arn` | `null` | IAM permissions boundary for every role created; required in some governed accounts |
