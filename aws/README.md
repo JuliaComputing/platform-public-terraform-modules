@@ -215,6 +215,24 @@ check the tags at plan time and fail with a message naming the missing tag, so a
 mistake surfaces before anything is created. Set
 `validate_existing_subnet_tags = false` to skip the check.
 
+### Choosing the control plane subnets
+
+By default the control plane places its ENIs in every subnet you passed, private and public alike. That is the right default, and most deployments should leave it alone. Nodes are unaffected either way — they always run in `private_subnet_ids`.
+
+It matters when your VPC mixes routable and non-routable address space, which is common in a shared or centrally allocated VPC. The private API server endpoint is DNS that resolves, inside the VPC, to the addresses of those ENIs. A client can therefore only reach it if it has a route to the subnet the ENI landed in. If the control plane drew an ENI from a range your corporate network does not route, `kubectl` from that network fails intermittently — once for every DNS answer that points at the unreachable ENI — while everything inside the VPC keeps working normally. Set `control_plane_subnet_ids` to the subnets your clients can actually reach:
+
+```hcl
+control_plane_subnet_ids = ["subnet-0aaa...", "subnet-0bbb..."]
+```
+
+Three constraints, all of them enforced by AWS rather than by this module:
+
+- **At least two subnets, in different availability zones.**
+- **The list must still cover every availability zone the cluster was created with.** AWS lets you change the subnets of a running cluster, and lets you remove subnets, but not the last subnet in an AZ the cluster already uses. On a new cluster this does not apply — the AZs are whatever you name here.
+- **Each subnet needs free addresses.** The control plane takes at least one ENI per AZ and needs headroom to replace them, so a nearly-full /27 is a poor choice.
+
+Changing this on an existing cluster is an in-place update from AWS provider 5.32.1 onward. Earlier providers marked `subnet_ids` as forcing replacement, so on an older pinned provider the same edit plans a cluster destroy. Read the plan before applying it.
+
 ## IAM permissions boundaries
 
 Centrally governed AWS accounts often allow `iam:CreateRole` only when the role
@@ -249,6 +267,23 @@ CloudWatch Logs actions, as described in [IRSA](#irsa) and the module READMEs �
 or the cluster will come up with roles that cannot do their work.
 
 Leave the variable unset and no boundary is attached, which is the default.
+
+## Externally managed tags
+
+In a centrally governed account something other than Terraform often tags your resources: a CMDB sync, a cost-allocation job, a backup or scheduling agent. It writes its keys after creation and keeps rewriting them.
+
+Terraform reads those tags back as drift. Every subsequent plan then proposes deleting or rewriting tags it did not create, which is noise at best; where the pipeline refuses to apply a plan that reverts externally managed state, or an SCP denies the untag call, it stops the apply entirely. The tags are also not yours to remove — the systems that wrote them will just write them again.
+
+`ignore_tag_keys` and `ignore_tag_key_prefixes` tell the AWS provider to leave those keys out of its comparison, for every resource in the configuration:
+
+```hcl
+ignore_tag_keys         = ["BackupOpted", "SupportBy"]
+ignore_tag_key_prefixes = ["cmdb:", "finops:"]
+```
+
+Both are empty by default, so nothing changes unless you set them.
+
+This is deliberately not the same thing as `tags`. `tags` is how you *set* a tag on every resource; these two are how you tell Terraform not to *manage* a tag someone else sets. A key you list here is ignored, not written — if you need the tag to exist, put it in `tags` instead.
 
 ## TLS
 
@@ -352,7 +387,32 @@ data "aws_iam_policy_document" "platform_assume_role" {
 
 ## Private API server endpoints
 
-`endpoint_public_access_cidrs` defaults to `0.0.0.0/0`. Narrow it to your own egress ranges, or set `endpoint_public_access = false` for a fully private cluster. A private cluster requires network access into the VPC (VPN, Direct Connect, or a bastion) for both `terraform apply` and `kubectl`.
+The API server has two independent endpoints, and at least one must be enabled. AWS rejects a configuration with both disabled, so `endpoint_public_access = false` on its own fails — pair it with `endpoint_private_access = true`.
+
+| | `endpoint_private_access` | `endpoint_public_access` |
+|---|---|---|
+| Public only (the default) | `false` | `true` |
+| Both, while you migrate | `true` | `true` |
+| Private only | `true` | `false` |
+
+Going private is a sequence, not a single change. Enable private access first and leave public access on: the cluster then answers on both, nothing breaks, and the change is reversible. AWS makes the endpoint hostname resolve, inside the VPC only, to the control plane's own ENI addresses, so nodes and in-VPC clients start reaching the API server without leaving the VPC. Confirm that has happened — the `api` audit log records the source address of every request — then disable public access.
+
+Reaching the private endpoint from outside the VPC needs both a network path in (VPN, Direct Connect, or a bastion) and permission on the cluster security group, which by default admits only the cluster's own members. Add your own ranges on TCP 443:
+
+```hcl
+resource "aws_vpc_security_group_ingress_rule" "kubectl" {
+  security_group_id = module.juliahub.cluster_security_group_id
+  cidr_ipv4         = "10.0.0.0/8"
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+  description       = "kubectl from the corporate network"
+}
+```
+
+Two things to check before disabling public access, because both are invisible while the public endpoint is still open. Anything that runs `terraform apply`, `helm`, or `kubectl` from outside the VPC — a CI runner in particular — needs to be moved inside it or it loses its path to the cluster. And where not every subnet in the VPC is routable from where your clients sit, confirm the subnets the control plane drew its ENIs from are ones they can actually reach — see [Choosing the control plane subnets](#choosing-the-control-plane-subnets).
+
+`endpoint_public_access_cidrs` narrows the public endpoint to named ranges. It is a weaker control than it appears if the cluster has no private endpoint yet: nodes reach the API server over the public endpoint in that case, egressing through a NAT gateway, so the allowlist must also contain that gateway's public addresses or every node is locked out.
 
 ## Additional PrivateLink endpoints
 
@@ -437,4 +497,8 @@ See [`variables.tf`](variables.tf) for the full list with descriptions and defau
 | `vpc_cidr` | `192.168.0.0/16` | Must not overlap `service_ipv4_cidr` |
 | `critical_node_instance_type` | `t3.large` | |
 | `endpoint_public_access_cidrs` | `["0.0.0.0/0"]` | Narrow this in production |
+| `endpoint_private_access` | `false` | Enable before disabling public access; both false is rejected |
+| `control_plane_subnet_ids` | `null` | Restrict where the control plane places its ENIs; defaults to every subnet given |
 | `permissions_boundary_arn` | `null` | IAM permissions boundary for every role created; required in some governed accounts |
+| `ignore_tag_keys` | `[]` | Tag keys an external system owns; keeps them out of every plan |
+| `ignore_tag_key_prefixes` | `[]` | Same, by key prefix |

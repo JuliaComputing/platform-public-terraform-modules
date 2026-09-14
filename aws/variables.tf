@@ -16,6 +16,25 @@ variable "tags" {
   default     = {}
 }
 
+variable "ignore_tag_keys" {
+  description = <<-EOT
+    Tag keys Terraform should ignore on every resource in this configuration.
+
+    Set this where an external system writes tags to your resources after
+    creation. Without it those tags appear in every plan as changes to revert,
+    and a plan that proposes removing them may be blocked by policy. Empty by
+    default, which changes nothing. See README, "Externally managed tags".
+  EOT
+  type        = list(string)
+  default     = []
+}
+
+variable "ignore_tag_key_prefixes" {
+  description = "Tag key prefixes Terraform should ignore on every resource in this configuration, for external tagging systems that namespace their keys. Empty by default."
+  type        = list(string)
+  default     = []
+}
+
 # --- Networking -------------------------------------------------------------
 
 # --- Existing VPC ------------------------------------------------------------
@@ -66,6 +85,27 @@ variable "public_subnet_ids" {
   validation {
     condition     = length(var.public_subnet_ids) == 0 || length(var.public_subnet_ids) >= 2
     error_message = "public_subnet_ids needs at least two subnets, in different availability zones."
+  }
+}
+
+variable "control_plane_subnet_ids" {
+  description = <<-EOT
+    Subnet IDs the EKS control plane places its ENIs in. Leave null to use every
+    subnet passed in `private_subnet_ids` and `public_subnet_ids`, which is the
+    default.
+
+    Set this when only some of your subnets are reachable from the networks that
+    need to talk to the API server privately. The private endpoint resolves to
+    these ENIs, so a client can only reach it if it has a route to the subnets
+    they sit in. At least two subnets, in different availability zones. See
+    README, "Choosing the control plane subnets".
+  EOT
+  type        = list(string)
+  default     = null
+
+  validation {
+    condition     = var.control_plane_subnet_ids == null || length(var.control_plane_subnet_ids) >= 2
+    error_message = "control_plane_subnet_ids needs at least two subnets, in different availability zones."
   }
 }
 
@@ -196,6 +236,12 @@ variable "service_ipv4_cidr" {
   description = "CIDR block for Kubernetes service cluster IPs. Must not overlap vpc_cidr."
   type        = string
   default     = "10.100.0.0/16"
+}
+
+variable "endpoint_private_access" {
+  description = "Whether the Kubernetes API server is reachable from inside the VPC. Enable this before disabling public access: AWS rejects a cluster with neither endpoint enabled."
+  type        = bool
+  default     = false
 }
 
 variable "endpoint_public_access" {

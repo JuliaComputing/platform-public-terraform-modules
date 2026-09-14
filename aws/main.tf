@@ -11,6 +11,12 @@ terraform {
 
 provider "aws" {
   region = var.region
+
+  # Both lists are empty by default, which is a no-op.
+  ignore_tags {
+    keys         = var.ignore_tag_keys
+    key_prefixes = var.ignore_tag_key_prefixes
+  }
 }
 
 locals {
@@ -31,6 +37,9 @@ locals {
   public_subnet_ids  = local.create_vpc ? module.vpc[0].public_subnet_ids : var.public_subnet_ids
   # The EKS control plane places ENIs in both public and private subnets.
   all_subnet_ids = local.create_vpc ? module.vpc[0].subnet_ids : concat(var.private_subnet_ids, var.public_subnet_ids)
+
+  # Unless the caller names the subnets the control plane may use.
+  control_plane_subnet_ids = var.control_plane_subnet_ids != null ? var.control_plane_subnet_ids : local.all_subnet_ids
 }
 
 module "vpc" {
@@ -68,12 +77,13 @@ module "eks" {
   region             = var.region
 
   vpc_id = local.vpc_id
-  # The control plane places ENIs in both public and private subnets; nodes run
-  # only in the private subnets.
-  control_plane_subnet_ids = local.all_subnet_ids
+  # The control plane places ENIs in both public and private subnets unless
+  # control_plane_subnet_ids narrows it; nodes run only in the private subnets.
+  control_plane_subnet_ids = local.control_plane_subnet_ids
   node_group_subnet_ids    = local.private_subnet_ids
 
   service_ipv4_cidr            = var.service_ipv4_cidr
+  endpoint_private_access      = var.endpoint_private_access
   endpoint_public_access       = var.endpoint_public_access
   endpoint_public_access_cidrs = var.endpoint_public_access_cidrs
   authentication_mode          = var.authentication_mode
