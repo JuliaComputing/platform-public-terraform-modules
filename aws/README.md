@@ -268,6 +268,23 @@ or the cluster will come up with roles that cannot do their work.
 
 Leave the variable unset and no boundary is attached, which is the default.
 
+## Externally managed tags
+
+In a centrally governed account something other than Terraform often tags your resources: a CMDB sync, a cost-allocation job, a backup or scheduling agent. It writes its keys after creation and keeps rewriting them.
+
+Terraform reads those tags back as drift. Every subsequent plan then proposes deleting or rewriting tags it did not create, which is noise at best; where the pipeline refuses to apply a plan that reverts externally managed state, or an SCP denies the untag call, it stops the apply entirely. The tags are also not yours to remove — the systems that wrote them will just write them again.
+
+`ignore_tag_keys` and `ignore_tag_key_prefixes` tell the AWS provider to leave those keys out of its comparison, for every resource in the configuration:
+
+```hcl
+ignore_tag_keys         = ["BackupOpted", "SupportBy"]
+ignore_tag_key_prefixes = ["cmdb:", "finops:"]
+```
+
+Both are empty by default, so nothing changes unless you set them.
+
+This is deliberately not the same thing as `tags`. `tags` is how you *set* a tag on every resource; these two are how you tell Terraform not to *manage* a tag someone else sets. A key you list here is ignored, not written — if you need the tag to exist, put it in `tags` instead.
+
 ## TLS
 
 TLS terminates at the ALB, not in the cluster. The platform serves plain HTTP behind it, so the chart needs `offloadTLS: true` and no `tlsFullchainPem` / `tlsPrivkeyPem`.
@@ -483,3 +500,5 @@ See [`variables.tf`](variables.tf) for the full list with descriptions and defau
 | `endpoint_private_access` | `false` | Enable before disabling public access; both false is rejected |
 | `control_plane_subnet_ids` | `null` | Restrict where the control plane places its ENIs; defaults to every subnet given |
 | `permissions_boundary_arn` | `null` | IAM permissions boundary for every role created; required in some governed accounts |
+| `ignore_tag_keys` | `[]` | Tag keys an external system owns; keeps them out of every plan |
+| `ignore_tag_key_prefixes` | `[]` | Same, by key prefix |

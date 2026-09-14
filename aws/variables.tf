@@ -16,6 +16,25 @@ variable "tags" {
   default     = {}
 }
 
+variable "ignore_tag_keys" {
+  description = <<-EOT
+    Tag keys Terraform should ignore on every resource in this configuration.
+
+    Set this where an external system writes tags to your resources after
+    creation. Without it those tags appear in every plan as changes to revert,
+    and a plan that proposes removing them may be blocked by policy. Empty by
+    default, which changes nothing. See README, "Externally managed tags".
+  EOT
+  type        = list(string)
+  default     = []
+}
+
+variable "ignore_tag_key_prefixes" {
+  description = "Tag key prefixes Terraform should ignore on every resource in this configuration, for external tagging systems that namespace their keys. Empty by default."
+  type        = list(string)
+  default     = []
+}
+
 # --- Networking -------------------------------------------------------------
 
 # --- Existing VPC ------------------------------------------------------------

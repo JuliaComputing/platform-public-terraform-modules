@@ -11,6 +11,13 @@ tags = {
   Owner       = "platform-team"
 }
 
+# Tags written by something other than Terraform - a CMDB sync, a backup or
+# scheduling agent - which would otherwise show up as drift in every plan.
+# Listing a key here means Terraform ignores it, not that it sets it. See
+# README, "Externally managed tags".
+# ignore_tag_keys         = ["BackupOpted", "SupportBy"]
+# ignore_tag_key_prefixes = ["cmdb:", "finops:"]
+
 # Networking Configuration
 vpc_cidr             = "192.168.0.0/16"
 public_subnet_cidrs  = ["192.168.0.0/18", "192.168.64.0/18"]

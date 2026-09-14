@@ -11,6 +11,12 @@ terraform {
 
 provider "aws" {
   region = var.region
+
+  # Both lists are empty by default, which is a no-op.
+  ignore_tags {
+    keys         = var.ignore_tag_keys
+    key_prefixes = var.ignore_tag_key_prefixes
+  }
 }
 
 locals {
