@@ -352,7 +352,32 @@ data "aws_iam_policy_document" "platform_assume_role" {
 
 ## Private API server endpoints
 
-`endpoint_public_access_cidrs` defaults to `0.0.0.0/0`. Narrow it to your own egress ranges, or set `endpoint_public_access = false` for a fully private cluster. A private cluster requires network access into the VPC (VPN, Direct Connect, or a bastion) for both `terraform apply` and `kubectl`.
+The API server has two independent endpoints, and at least one must be enabled. AWS rejects a configuration with both disabled, so `endpoint_public_access = false` on its own fails — pair it with `endpoint_private_access = true`.
+
+| | `endpoint_private_access` | `endpoint_public_access` |
+|---|---|---|
+| Public only (the default) | `false` | `true` |
+| Both, while you migrate | `true` | `true` |
+| Private only | `true` | `false` |
+
+Going private is a sequence, not a single change. Enable private access first and leave public access on: the cluster then answers on both, nothing breaks, and the change is reversible. AWS makes the endpoint hostname resolve, inside the VPC only, to the control plane's own ENI addresses, so nodes and in-VPC clients start reaching the API server without leaving the VPC. Confirm that has happened — the `api` audit log records the source address of every request — then disable public access.
+
+Reaching the private endpoint from outside the VPC needs both a network path in (VPN, Direct Connect, or a bastion) and permission on the cluster security group, which by default admits only the cluster's own members. Add your own ranges on TCP 443:
+
+```hcl
+resource "aws_vpc_security_group_ingress_rule" "kubectl" {
+  security_group_id = module.juliahub.cluster_security_group_id
+  cidr_ipv4         = "10.0.0.0/8"
+  ip_protocol       = "tcp"
+  from_port         = 443
+  to_port           = 443
+  description       = "kubectl from the corporate network"
+}
+```
+
+Two things to check before disabling public access, because both are invisible while the public endpoint is still open. Anything that runs `terraform apply`, `helm`, or `kubectl` from outside the VPC — a CI runner in particular — needs to be moved inside it or it loses its path to the cluster. And where not every subnet in the VPC is routable from where your clients sit, confirm the subnets the control plane drew its ENIs from are ones they can actually reach.
+
+`endpoint_public_access_cidrs` narrows the public endpoint to named ranges. It is a weaker control than it appears if the cluster has no private endpoint yet: nodes reach the API server over the public endpoint in that case, egressing through a NAT gateway, so the allowlist must also contain that gateway's public addresses or every node is locked out.
 
 ## Additional PrivateLink endpoints
 
@@ -437,4 +462,5 @@ See [`variables.tf`](variables.tf) for the full list with descriptions and defau
 | `vpc_cidr` | `192.168.0.0/16` | Must not overlap `service_ipv4_cidr` |
 | `critical_node_instance_type` | `t3.large` | |
 | `endpoint_public_access_cidrs` | `["0.0.0.0/0"]` | Narrow this in production |
+| `endpoint_private_access` | `false` | Enable before disabling public access; both false is rejected |
 | `permissions_boundary_arn` | `null` | IAM permissions boundary for every role created; required in some governed accounts |

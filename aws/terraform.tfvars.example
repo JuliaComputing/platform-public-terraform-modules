@@ -28,7 +28,12 @@ enable_bedrock_vpc_endpoint = false
 kubernetes_version = "1.33"
 service_ipv4_cidr  = "10.100.0.0/16" # must not overlap vpc_cidr
 
-# Restrict this to your own egress ranges in production.
+# API server endpoints. At least one must be enabled; AWS rejects both being
+# false. To go private, set endpoint_private_access = true first and leave public
+# access on, confirm nodes and clients are reaching the cluster from inside the
+# VPC, then set endpoint_public_access = false. See README, "Private API server
+# endpoints".
+endpoint_private_access      = false
 endpoint_public_access       = true
 endpoint_public_access_cidrs = ["0.0.0.0/0"]
 

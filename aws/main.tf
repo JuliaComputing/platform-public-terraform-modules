@@ -74,6 +74,7 @@ module "eks" {
   node_group_subnet_ids    = local.private_subnet_ids
 
   service_ipv4_cidr            = var.service_ipv4_cidr
+  endpoint_private_access      = var.endpoint_private_access
   endpoint_public_access       = var.endpoint_public_access
   endpoint_public_access_cidrs = var.endpoint_public_access_cidrs
   authentication_mode          = var.authentication_mode

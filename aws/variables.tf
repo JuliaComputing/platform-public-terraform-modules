@@ -198,6 +198,12 @@ variable "service_ipv4_cidr" {
   default     = "10.100.0.0/16"
 }
 
+variable "endpoint_private_access" {
+  description = "Whether the Kubernetes API server is reachable from inside the VPC. Enable this before disabling public access: AWS rejects a cluster with neither endpoint enabled."
+  type        = bool
+  default     = false
+}
+
 variable "endpoint_public_access" {
   description = "Whether the Kubernetes API server is reachable from outside the VPC"
   type        = bool
