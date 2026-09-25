@@ -427,6 +427,19 @@ additional_interface_vpc_endpoints = {
 }
 ```
 
+## Windows Workstation
+
+Windows Workstation runs each session as an EC2 VM that the platform launches from a launch template in this account, outside the cluster. It is off by default. To enable it:
+
+1. Ask JuliaHub to share the Windows Workstation AMI and the `efs-samba` AMI with this account.
+2. Set `enable_windows_workstation = true` and `windows_workstation_ami_name` to the shared AMI's name.
+3. Set the chart's `windowsWorkstation.enabled: true`, which deploys guacd and rdpproxy.
+4. Add the Windows products and job image to the platform settings. The job image's `url` is the `windows_workstation_job_image_url` output, with `registry_type: Amazon AMI`, and its tag is the `windows_workstation_ami_name` output.
+
+The platform launches the VMs with the platform pods' own IRSA credentials, the service account role, not the `compute.cloudhost.aws.roleArn` jobs role. This module attaches the permissions it needs to the service account role, scoped to workstation-tagged instances, the workstation instance role and the platform's `jr*` SSM parameters. Jobs never receive those permissions: they are not on the jobs role that job credentials are delegated from.
+
+Each workstation mounts the user's JuliaHub directory through an `efs-samba` sidecar VM that mounts the userdata EFS and shares it over SMB. The module admits the sidecar to the userdata filesystem, but its AMI currently mounts without the `iam` option. With `restrict_efs_mounts_to_node_roles` set, the workstation starts but its JuliaHub drive does not mount.
+
 ## Modules
 
 | Module | Description |
@@ -439,6 +452,7 @@ additional_interface_vpc_endpoints = {
 | [modules/alb-controller](modules/alb-controller/) | IRSA role for the AWS Load Balancer Controller |
 | [modules/acm-certificate](modules/acm-certificate/) | ACM certificate for the platform hostname, DNS-validated in Route 53 |
 | [modules/compute](modules/compute/) | Datasets bucket, log groups and archives, compute IAM roles |
+| [modules/windows-workstation](modules/windows-workstation/) | Launch templates, instance profile, security groups and launcher permissions for Windows Workstation |
 
 ### Using the modules individually
 

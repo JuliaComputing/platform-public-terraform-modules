@@ -194,6 +194,11 @@ locals {
     local.karpenter_node_role_arns,
     var.additional_efs_mount_role_arns,
   )
+
+  # The Windows Workstation efs-samba sidecar mounts the userdata filesystem
+  # from outside the cluster, under its own instance role and security group.
+  windows_workstation_efs_role_arns = var.enable_windows_workstation ? [module.windows_workstation[0].instance_role_arn] : []
+  windows_workstation_efs_sg_ids    = var.enable_windows_workstation ? [module.windows_workstation[0].efs_samba_security_group_id] : []
 }
 
 module "efs_config" {
@@ -230,8 +235,8 @@ module "efs_userdata" {
   vpc_id     = local.vpc_id
   subnet_ids = local.private_subnet_ids
 
-  allow_from_security_group_ids = [module.eks.cluster_security_group_id]
-  restrict_mount_to_role_arns   = var.restrict_efs_mounts_to_node_roles ? local.efs_mount_role_arns : []
+  allow_from_security_group_ids = concat([module.eks.cluster_security_group_id], local.windows_workstation_efs_sg_ids)
+  restrict_mount_to_role_arns   = var.restrict_efs_mounts_to_node_roles ? concat(local.efs_mount_role_arns, local.windows_workstation_efs_role_arns) : []
 
   transition_to_ia     = var.efs_userdata_transition_to_ia
   enable_backup_policy = var.efs_userdata_backup
@@ -272,4 +277,46 @@ module "compute" {
 
   permissions_boundary_arn = var.permissions_boundary_arn
   tags                     = local.common_tags
+}
+
+module "windows_workstation" {
+  source = "./modules/windows-workstation"
+  count  = var.enable_windows_workstation ? 1 : 0
+
+  platform_hostname    = var.platform_hostname == "" ? var.cluster_name : var.platform_hostname
+  resource_name_prefix = var.resource_name_prefix
+
+  vpc_id    = local.vpc_id
+  subnet_id = coalesce(var.windows_workstation_subnet_id, local.private_subnet_ids[0])
+  # Carried by the managed node group and, via its karpenter.sh/discovery tag,
+  # Karpenter nodes: wherever guacd lands.
+  node_security_group_ids = [module.eks.cluster_security_group_id]
+
+  # The platform makes its EC2 and SSM calls for workstations with the pods' own
+  # IRSA credentials, not by assuming the cloudhost (jobs) role.
+  launcher_role_name = one(module.compute[*].service_account_role_name)
+
+  ami_name             = var.windows_workstation_ami_name
+  ami_owners           = var.windows_workstation_ami_owners
+  efs_samba_ami_name   = var.windows_workstation_efs_samba_ami_name
+  launch_template_name = var.windows_workstation_launch_template_name
+
+  permissions_boundary_arn = var.permissions_boundary_arn
+  tags                     = local.common_tags
+}
+
+# Module blocks cannot carry preconditions, so they hang off this.
+resource "terraform_data" "windows_workstation_preconditions" {
+  count = var.enable_windows_workstation ? 1 : 0
+
+  lifecycle {
+    precondition {
+      condition     = var.create_compute
+      error_message = "enable_windows_workstation requires create_compute: the platform launches workstations with the compute module's service account role."
+    }
+    precondition {
+      condition     = var.windows_workstation_ami_name != ""
+      error_message = "enable_windows_workstation requires windows_workstation_ami_name."
+    }
+  }
 }

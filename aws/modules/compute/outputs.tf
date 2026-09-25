@@ -13,6 +13,11 @@ output "jobs_role_arn" {
   value       = aws_iam_role.jobs.arn
 }
 
+output "jobs_role_name" {
+  description = "Name of the jobs role."
+  value       = aws_iam_role.jobs.name
+}
+
 output "jobs_role_max_session_duration" {
   description = "Maximum STS session duration for the jobs role. Must match the platform's compute.cloudhost.aws.maxSessionDuration Helm value."
   value       = aws_iam_role.jobs.max_session_duration

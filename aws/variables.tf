@@ -751,3 +751,55 @@ variable "permissions_boundary_arn" {
   type        = string
   default     = null
 }
+
+# --- Windows Workstation ----------------------------------------------------
+
+variable "enable_windows_workstation" {
+  description = <<-EOT
+    Whether to create the AWS resources Windows Workstation needs: EC2 launch
+    templates for the workstation VMs and their efs-samba sidecars, an instance
+    profile, RDP and SMB security groups, and the permissions the platform
+    launches them with, attached to the platform service account (IRSA) role.
+
+    Requires create_compute. Pairs with the chart's windowsWorkstation.enabled,
+    which deploys guacd and rdpproxy in the cluster. Both AMIs must first be
+    shared into this account by JuliaHub.
+
+    The efs-samba sidecar mounts the user's directory from the userdata EFS
+    without the `iam` mount option, so with restrict_efs_mounts_to_node_roles
+    the workstation starts but its JuliaHub drive does not mount until the
+    efs-samba AMI mounts with `iam`.
+  EOT
+  type        = bool
+  default     = false
+}
+
+variable "windows_workstation_ami_name" {
+  description = "Name, or name prefix, of the Windows Workstation AMI shared into this account. Required when enable_windows_workstation is true."
+  type        = string
+  default     = ""
+}
+
+variable "windows_workstation_ami_owners" {
+  description = "Accounts the Windows Workstation and efs-samba AMIs are shared from."
+  type        = list(string)
+  default     = ["192557667917"]
+}
+
+variable "windows_workstation_efs_samba_ami_name" {
+  description = "Name, or name prefix, of the efs-samba AMI shared into this account."
+  type        = string
+  default     = "efs-samba"
+}
+
+variable "windows_workstation_subnet_id" {
+  description = "Private subnet the workstations launch into. Defaults to the first private subnet."
+  type        = string
+  default     = null
+}
+
+variable "windows_workstation_launch_template_name" {
+  description = "Name of the workstation launch template, which the platform's job image URL refers to. Defaults to winworkstation-<resource name prefix>."
+  type        = string
+  default     = ""
+}
