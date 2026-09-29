@@ -113,6 +113,8 @@ compute:
 
 `compute.enabled` is gated by your Replicated license — check entitlement with JuliaHub support before setting it.
 
+`useIAM` must match `restrict_efs_mounts_to_node_roles` (the `efs_mounts_require_iam` output). To turn the restriction on for an existing install, upgrade the chart with `useIAM: true` first and apply the terraform second. The `iam` mount option works without a policy, but a policy without it denies every new mount, and the chart's pre-upgrade hook then cannot mount the config filesystem, which deadlocks the upgrade with `access denied by server`.
+
 ## Naming
 
 `platform_hostname` is the hostname users load the platform from. It is the
@@ -438,7 +440,7 @@ Windows Workstation runs each session as an EC2 VM that the platform launches fr
 
 The platform launches the VMs with the platform pods' own IRSA credentials, the service account role, not the `compute.cloudhost.aws.roleArn` jobs role. This module attaches the permissions it needs to the service account role, scoped to workstation-tagged instances, the workstation instance role and the platform's `jr*` SSM parameters. Jobs never receive those permissions: they are not on the jobs role that job credentials are delegated from.
 
-Each workstation mounts the user's JuliaHub directory through an `efs-samba` sidecar VM that mounts the userdata EFS and shares it over SMB. The module admits the sidecar to the userdata filesystem, but its AMI currently mounts without the `iam` option. With `restrict_efs_mounts_to_node_roles` set, the workstation starts but its JuliaHub drive does not mount.
+Each workstation mounts the user's JuliaHub directory through an `efs-samba` sidecar VM that mounts the userdata EFS and shares it over SMB. With `restrict_efs_mounts_to_node_roles` on, the module admits the sidecar's instance role to the userdata filesystem policy, and the sidecar has to mount with the `iam` option. Older `efs-samba` AMIs don't, and the workstation then starts without its JuliaHub drive, so use a current one.
 
 ## Modules
 

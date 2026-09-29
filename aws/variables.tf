@@ -534,6 +534,14 @@ variable "restrict_efs_mounts_to_node_roles" {
     The chart's configDirectory.efs.useIAM and
     compute.userdataDirectory.efs.useIAM must match this setting. The
     efs_mounts_require_iam output carries the value for exactly that purpose.
+
+    Turning this on for an existing install: upgrade the chart with useIAM
+    true FIRST, then apply this. The `iam` option works without a policy, but
+    a policy without it denies every new mount, and the chart's pre-upgrade
+    hook needs the config filesystem mounted before Helm updates the
+    PersistentVolumes -- so applying the policy first deadlocks the upgrade
+    with `access denied by server`. If that happens, add `iam` to the EFS
+    PersistentVolumes' spec.mountOptions by hand and the mounts recover.
   EOT
   type        = bool
   default     = true
@@ -765,10 +773,12 @@ variable "enable_windows_workstation" {
     which deploys guacd and rdpproxy in the cluster. Both AMIs must first be
     shared into this account by JuliaHub.
 
-    The efs-samba sidecar mounts the user's directory from the userdata EFS
-    without the `iam` mount option, so with restrict_efs_mounts_to_node_roles
-    the workstation starts but its JuliaHub drive does not mount until the
-    efs-samba AMI mounts with `iam`.
+    The efs-samba sidecar mounts the user's directory from the userdata EFS.
+    With restrict_efs_mounts_to_node_roles on, this admits the sidecar's
+    instance role to the userdata filesystem policy, but the sidecar also has
+    to mount with the `iam` option: older efs-samba AMIs do not, and the
+    workstation then starts without its JuliaHub drive. Use an efs-samba AMI
+    that mounts with `iam`.
   EOT
   type        = bool
   default     = false
