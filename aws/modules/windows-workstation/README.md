@@ -27,9 +27,11 @@ module "windows_workstation" {
 
 The userdata EFS filesystem must admit the sidecar: add `efs_samba_security_group_id` to its NFS ingress and, when it has a filesystem policy, `instance_role_arn` to its mount roles. The root module does both.
 
-Wire the outputs into the platform settings for the Windows job image:
+Wire the outputs into the platform settings for the Windows job image (`registry_type: Amazon AMI`):
 
 | Output | Setting |
 |--------|---------|
-| `job_image_url` | the image repository's `url`, with `registry_type: Amazon AMI` |
+| `launch_template_name` | what `amazonami://__WINDOWS_LAUNCH_TEMPLATE__` resolves to: the chart substitutes it from `windowsWorkstation.launchTemplateName`, which defaults to this module's default name, so set that value only if you changed the name |
 | `ami_name` | the image entry's `tag` |
+
+The `efs-samba` AMI needs no configuration: the module uses the newest AMI shared into the account whose name starts with `efs_samba_ami_name` (`efs-samba` by default). Re-apply after a newer build is shared to move the sidecar's launch template onto it.
