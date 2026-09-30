@@ -211,6 +211,22 @@ output "job_log_archive_bucket_name" {
   value       = one(module.compute[*].job_log_archive_bucket_name)
 }
 
+# Windows Workstation outputs
+output "windows_workstation_job_image_url" {
+  description = "URL of the Windows Workstation job image for the platform settings, with registry_type \"Amazon AMI\". Null unless enable_windows_workstation."
+  value       = one(module.windows_workstation[*].job_image_url)
+}
+
+output "windows_workstation_ami_name" {
+  description = "Exact name of the Windows Workstation AMI, for the job image entry's tag. Null unless enable_windows_workstation."
+  value       = one(module.windows_workstation[*].ami_name)
+}
+
+output "windows_workstation_launch_template_name" {
+  description = "Name of the workstation launch template. Null unless enable_windows_workstation."
+  value       = one(module.windows_workstation[*].launch_template_name)
+}
+
 # Convenience
 output "kubeconfig_command" {
   description = "Command to add this cluster to your local kubeconfig"

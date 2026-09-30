@@ -1,0 +1,93 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Describe",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeImages",
+        "ec2:DescribeInstances",
+        "ec2:DescribeInstanceStatus",
+        "ec2:DescribeLaunchTemplates",
+        "ec2:DescribeLaunchTemplateVersions"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "Launch",
+      "Effect": "Allow",
+      "Action": "ec2:RunInstances",
+      "Resource": "*"
+    },
+    {
+      "Sid": "TagOnCreate",
+      "Effect": "Allow",
+      "Action": "ec2:CreateTags",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "ec2:CreateAction": ["RunInstances", "CreateImage"]
+        }
+      }
+    },
+    {
+      "Sid": "ManageWorkstations",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateImage",
+        "ec2:GetPasswordData",
+        "ec2:StartInstances",
+        "ec2:StopInstances",
+        "ec2:TerminateInstances"
+      ],
+      "Resource": "arn:${partition}:ec2:${region}:${account_id}:instance/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/juliarun-job-type": "windows-workstation"
+        }
+      }
+    },
+    {
+      "Sid": "CreateWorkstationImages",
+      "Effect": "Allow",
+      "Action": "ec2:CreateImage",
+      "Resource": [
+        "arn:${partition}:ec2:${region}::image/*",
+        "arn:${partition}:ec2:${region}::snapshot/*"
+      ]
+    },
+    {
+      "Sid": "DeregisterWorkstationImages",
+      "Effect": "Allow",
+      "Action": "ec2:DeregisterImage",
+      "Resource": "arn:${partition}:ec2:${region}::image/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/juliarun-job-component": "windows"
+        }
+      }
+    },
+    {
+      "Sid": "PassInstanceRole",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "${instance_role_arn}",
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": "ec2.amazonaws.com"
+        }
+      }
+    },
+    {
+      "Sid": "JobParameters",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:AddTagsToResource",
+        "ssm:DeleteParameter",
+        "ssm:GetParameter",
+        "ssm:PutParameter"
+      ],
+      "Resource": "arn:${partition}:ssm:${region}:${account_id}:parameter/jr*"
+    }
+  ]
+}
