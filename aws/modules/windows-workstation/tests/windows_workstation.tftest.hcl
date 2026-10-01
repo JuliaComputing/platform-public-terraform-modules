@@ -77,6 +77,15 @@ run "defaults" {
     error_message = "workstations must not get a public IP"
   }
 
+  # Accounts that deny RunInstances without IMDSv2 must still be able to launch both.
+  assert {
+    condition = (
+      one(aws_launch_template.workstation.metadata_options).http_tokens == "required" &&
+      one(aws_launch_template.efs_samba.metadata_options).http_tokens == "required"
+    )
+    error_message = "both launch templates must require IMDSv2"
+  }
+
   assert {
     condition     = aws_vpc_security_group_ingress_rule.workstation_rdp[0].from_port == 3389 && aws_vpc_security_group_ingress_rule.workstation_rdp[0].referenced_security_group_id == "sg-0nodes"
     error_message = "RDP should be admitted only from the node security groups"

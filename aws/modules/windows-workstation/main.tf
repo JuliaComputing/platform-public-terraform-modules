@@ -156,6 +156,16 @@ resource "aws_launch_template" "workstation" {
 
   instance_initiated_shutdown_behavior = "terminate"
 
+  # IMDSv2 only, as on the cluster's own nodes. Accounts whose guardrails deny
+  # RunInstances without it cannot launch workstations otherwise. Everything on
+  # the instances that reads metadata (the AWS CLI, efs-utils, EC2Launch, the
+  # SSM agent) supports session tokens.
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_put_response_hop_limit = 1
+    http_tokens                 = "required"
+  }
+
   network_interfaces {
     associate_public_ip_address = false
     delete_on_termination       = true
@@ -201,6 +211,12 @@ resource "aws_launch_template" "efs_samba" {
   update_default_version = true
 
   instance_initiated_shutdown_behavior = "terminate"
+
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_put_response_hop_limit = 1
+    http_tokens                 = "required"
+  }
 
   network_interfaces {
     associate_public_ip_address = false
