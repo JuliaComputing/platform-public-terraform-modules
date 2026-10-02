@@ -93,3 +93,15 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "instance_tags" {
+  description = "Extra tags for the instances both launch templates create, on top of var.tags. For tags that have to be on the instance rather than on every resource in the install: compliance automation that reads an instance's patch group or maintenance window from its tags, cost allocation at the instance level, and the like. Name is still set by the module and cannot be overridden here."
+  type        = map(string)
+  default     = {}
+}
+
+variable "efs_samba_instance_tags" {
+  description = "Extra tags for the efs-samba instances only, merged over var.instance_tags. The two launch templates run different operating systems — the workstation is Windows and the sidecar is Amazon Linux 2 — so a tag whose value is per-OS, such as a patch group naming a patch baseline, needs a different value on each and cannot come from var.instance_tags alone."
+  type        = map(string)
+  default     = {}
+}

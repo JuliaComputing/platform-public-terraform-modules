@@ -164,3 +164,38 @@ run "parameter_tier_opt_out" {
     error_message = "turning intelligent_parameter_tiering off should leave the account's setting alone"
   }
 }
+
+# The two templates launch different operating systems, so a per-OS tag has to
+# be settable per template.
+run "per_template_instance_tags" {
+  command = plan
+
+  variables {
+    instance_tags           = { "Patch Group" = "windows-baseline", "scan-window" = "10-and-22-utc" }
+    efs_samba_instance_tags = { "Patch Group" = "amazon-linux-2-baseline" }
+  }
+
+  assert {
+    condition = (
+      one(aws_launch_template.workstation.tag_specifications).tags["Patch Group"] == "windows-baseline" &&
+      one(aws_launch_template.efs_samba.tag_specifications).tags["Patch Group"] == "amazon-linux-2-baseline"
+    )
+    error_message = "each template's instances should carry that template's own patch group"
+  }
+
+  assert {
+    condition = (
+      one(aws_launch_template.workstation.tag_specifications).tags["scan-window"] == "10-and-22-utc" &&
+      one(aws_launch_template.efs_samba.tag_specifications).tags["scan-window"] == "10-and-22-utc"
+    )
+    error_message = "instance_tags should reach the instances of both templates"
+  }
+
+  assert {
+    condition = (
+      one(aws_launch_template.workstation.tag_specifications).tags["Name"] == "winworkstation-example-juliahub-com" &&
+      one(aws_launch_template.efs_samba.tag_specifications).tags["Name"] == "winworkstation-example-juliahub-com-efs-samba"
+    )
+    error_message = "instance tags must not displace Name"
+  }
+}

@@ -819,3 +819,15 @@ variable "windows_workstation_launch_template_name" {
   type        = string
   default     = ""
 }
+
+variable "windows_workstation_instance_tags" {
+  description = "Extra tags for the instances the Windows Workstation launch templates create, on top of var.tags. For tags that must be on the instance itself rather than on every resource, such as a patch group or maintenance window read by compliance automation."
+  type        = map(string)
+  default     = {}
+}
+
+variable "windows_workstation_efs_samba_instance_tags" {
+  description = "Extra tags for the efs-samba instances only, merged over windows_workstation_instance_tags. The workstation is Windows and the sidecar is Amazon Linux 2, so a per-OS tag value needs a different value on each."
+  type        = map(string)
+  default     = {}
+}

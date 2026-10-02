@@ -193,7 +193,7 @@ resource "aws_launch_template" "workstation" {
 
   tag_specifications {
     resource_type = "instance"
-    tags = merge(var.tags, {
+    tags = merge(var.tags, var.instance_tags, {
       Name = local.launch_template_name
     })
   }
@@ -243,7 +243,7 @@ resource "aws_launch_template" "efs_samba" {
 
   tag_specifications {
     resource_type = "instance"
-    tags = merge(var.tags, {
+    tags = merge(var.tags, var.instance_tags, var.efs_samba_instance_tags, {
       Name = "${local.launch_template_name}-efs-samba"
     })
   }

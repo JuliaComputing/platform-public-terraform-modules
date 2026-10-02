@@ -303,6 +303,9 @@ module "windows_workstation" {
 
   intelligent_parameter_tiering = var.windows_workstation_intelligent_parameter_tiering
 
+  instance_tags           = var.windows_workstation_instance_tags
+  efs_samba_instance_tags = var.windows_workstation_efs_samba_instance_tags
+
   permissions_boundary_arn = var.permissions_boundary_arn
   tags                     = local.common_tags
 }
