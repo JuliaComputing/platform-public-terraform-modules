@@ -444,6 +444,8 @@ Each workstation mounts the user's JuliaHub directory through an `efs-samba` sid
 
 The platform passes each workstation job its config and secret through SSM Parameter Store, and the parameters' size grows with the user's identity: for a user with a long email address they can exceed the 4 KB Standard-tier limit, and the workstation then fails to launch. The module therefore sets the account's default parameter tier, in the install's region, to Intelligent-Tiering, which uses an Advanced parameter (at Advanced pricing) only for values over 4 KB. This is an account-wide setting that affects every Parameter Store write without an explicit tier. Set `windows_workstation_intelligent_parameter_tiering = false` if you manage it elsewhere, and make sure it isn't left at Standard.
 
+If your account's compliance automation reads tags off each instance — a patch group, a maintenance window — set them with `windows_workstation_instance_tags`, which tags the instances both launch templates create without tagging everything else in the install. Where a value is per-OS, as a patch group naming a patch baseline is, override it for the Amazon Linux 2 sidecar with `windows_workstation_efs_samba_instance_tags`. Setting them in Terraform rather than on the instances matters because the module owns both launch templates with `update_default_version = true`, so an apply replaces a hand-edited version with a new default.
+
 ## Modules
 
 | Module | Description |
