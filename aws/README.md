@@ -442,6 +442,8 @@ The platform launches the VMs with the platform pods' own IRSA credentials, the 
 
 Each workstation mounts the user's JuliaHub directory through an `efs-samba` sidecar VM that mounts the userdata EFS and shares it over SMB. With `restrict_efs_mounts_to_node_roles` on, the module admits the sidecar's instance role to the userdata filesystem policy, and the sidecar has to mount with the `iam` option. Older `efs-samba` AMIs don't, and the workstation then starts without its JuliaHub drive; make sure the newest shared `efs-samba` AMI is a build that mounts with `iam`, and re-apply so the launch template uses it.
 
+The platform passes each workstation job its config and secret through SSM Parameter Store, and the parameters' size grows with the user's identity: for a user with a long email address they can exceed the 4 KB Standard-tier limit, and the workstation then fails to launch. The module therefore sets the account's default parameter tier, in the install's region, to Intelligent-Tiering, which uses an Advanced parameter (at Advanced pricing) only for values over 4 KB. This is an account-wide setting that affects every Parameter Store write without an explicit tier. Set `windows_workstation_intelligent_parameter_tiering = false` if you manage it elsewhere, and make sure it isn't left at Standard.
+
 ## Modules
 
 | Module | Description |

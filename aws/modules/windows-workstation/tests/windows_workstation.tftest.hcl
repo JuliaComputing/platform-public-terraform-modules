@@ -86,6 +86,15 @@ run "defaults" {
     error_message = "both launch templates must require IMDSv2"
   }
 
+  # Job parameters for users with long email addresses exceed the Standard tier's 4 KB.
+  assert {
+    condition = (
+      aws_ssm_service_setting.default_parameter_tier[0].setting_value == "Intelligent-Tiering" &&
+      aws_ssm_service_setting.default_parameter_tier[0].setting_id == "arn:aws:ssm:us-east-1:111122223333:servicesetting/ssm/parameter-store/default-parameter-tier"
+    )
+    error_message = "the default parameter tier should be Intelligent-Tiering, in this account and region"
+  }
+
   assert {
     condition     = aws_vpc_security_group_ingress_rule.workstation_rdp[0].from_port == 3389 && aws_vpc_security_group_ingress_rule.workstation_rdp[0].referenced_security_group_id == "sg-0nodes"
     error_message = "RDP should be admitted only from the node security groups"
@@ -140,5 +149,18 @@ run "explicit_launch_template_name" {
   assert {
     condition     = output.job_image_url == "amazonami://custom-winworkstation" && aws_launch_template.efs_samba.name == "custom-winworkstation-efs-samba"
     error_message = "an explicit launch template name should carry through to both templates and the URL"
+  }
+}
+
+run "parameter_tier_opt_out" {
+  command = plan
+
+  variables {
+    intelligent_parameter_tiering = false
+  }
+
+  assert {
+    condition     = length(aws_ssm_service_setting.default_parameter_tier) == 0
+    error_message = "turning intelligent_parameter_tiering off should leave the account's setting alone"
   }
 }

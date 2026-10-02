@@ -808,6 +808,12 @@ variable "windows_workstation_subnet_id" {
   default     = null
 }
 
+variable "windows_workstation_intelligent_parameter_tiering" {
+  description = "Set this account and region's default SSM Parameter Store tier to Intelligent-Tiering, so workstation jobs whose SSM parameters exceed the 4 KB Standard limit still launch. Account-wide; turn it off if you manage the setting elsewhere."
+  type        = bool
+  default     = true
+}
+
 variable "windows_workstation_launch_template_name" {
   description = "Name of the workstation launch template, which the platform's job image URL refers to. Defaults to winworkstation-<resource name prefix>."
   type        = string

@@ -76,6 +76,12 @@ variable "key_name" {
   default     = null
 }
 
+variable "intelligent_parameter_tiering" {
+  description = "Set this account and region's default SSM Parameter Store tier to Intelligent-Tiering. Each workstation job's config and secret are SSM parameters the platform writes without a tier, so under the Standard default a value over 4 KB (as for users with long email addresses) fails and the workstation never launches. Intelligent-Tiering stores a parameter as Advanced, at Advanced pricing, only when it exceeds the Standard limit. This is an account-wide setting; turn it off if you manage it elsewhere."
+  type        = bool
+  default     = true
+}
+
 variable "permissions_boundary_arn" {
   description = "Permissions boundary for the workstation instance role."
   type        = string
