@@ -301,6 +301,8 @@ module "windows_workstation" {
   efs_samba_ami_name   = var.windows_workstation_efs_samba_ami_name
   launch_template_name = var.windows_workstation_launch_template_name
 
+  intelligent_parameter_tiering = var.windows_workstation_intelligent_parameter_tiering
+
   permissions_boundary_arn = var.permissions_boundary_arn
   tags                     = local.common_tags
 }

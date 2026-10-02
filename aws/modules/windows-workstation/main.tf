@@ -259,6 +259,18 @@ resource "aws_launch_template" "efs_samba" {
   })
 }
 
+# --- Parameter Store tier ---------------------------------------------------
+
+# The platform writes each workstation job's config and secret as SSM
+# parameters without a tier, so they take the account's default. Under Standard
+# a value over 4 KB fails, and the workstation never launches.
+resource "aws_ssm_service_setting" "default_parameter_tier" {
+  count = var.intelligent_parameter_tiering ? 1 : 0
+
+  setting_id    = "arn:${local.partition}:ssm:${local.region}:${local.account_id}:servicesetting/ssm/parameter-store/default-parameter-tier"
+  setting_value = "Intelligent-Tiering"
+}
+
 # --- Launcher permissions ---------------------------------------------------
 
 resource "aws_iam_policy" "launcher" {
