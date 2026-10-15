@@ -207,7 +207,7 @@ output "audit_log_archive_bucket_name" {
 }
 
 output "job_log_archive_bucket_name" {
-  description = "Name of the job log archive bucket, or null when logging is disabled. Exposed so a teardown can empty it before destroy: force_destroy deletes objects serially and stalls on buckets holding many versions."
+  description = "Name of the job log archive bucket, or null when logging is disabled. Set it as the platform chart's compute.joblogs.archive.bucket, or job logs are never archived. Also lets a teardown empty it before destroy: force_destroy deletes objects serially and stalls on buckets holding many versions."
   value       = one(module.compute[*].job_log_archive_bucket_name)
 }
 
