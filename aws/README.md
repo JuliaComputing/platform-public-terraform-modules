@@ -80,7 +80,12 @@ After `terraform apply`, these outputs populate a `myvalues.yaml`:
 | `datasets_role_arn` | `compute.storage.aws.storageRoleArn` |
 | `jobs_role_arn` | `compute.cloudhost.aws.roleArn` |
 | `cloudhost_max_session_duration` | `compute.cloudhost.aws.maxSessionDuration` |
-| `region` (your `region` input) | `compute.cloudhost.aws.region` |
+| `region` (your `region` input) | `compute.cloudhost.aws.region`, `logging-fluentbit.region` |
+| `compute_service_account_role_arn` | `logging-fluentbit.serviceAccountRoleArn` |
+| `job_log_group_name` | `compute.joblogs.groupName`, `logging-fluentbit.logGroupName` |
+| `job_log_archive_bucket_name` | `compute.joblogs.archive.bucket` |
+
+The job log outputs are null when `create_logging = false`. Without `compute.joblogs.archive.bucket` the platform never exports job logs to the archive bucket, so a job's logs are gone once the log group's retention (`job_log_retention_days`, 7 by default) has passed. Chart versions that predate the value ignore it.
 
 Controller outputs go to their own Helm charts rather than the platform chart:
 
