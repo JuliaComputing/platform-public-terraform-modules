@@ -627,6 +627,37 @@ variable "rds_snapshot_identifier" {
   default     = ""
 }
 
+variable "rds_iam_database_authentication_enabled" {
+  description = <<-EOT
+    Whether the platform connects to RDS with short-lived IAM tokens instead of
+    a password (the chart's postgres.external.auth: iam). Enables IAM
+    authentication on the instance, grants the platform service account role
+    rds-db:connect, and creates IRSA roles for the chart's bootstrap Job and,
+    with rds_manage_master_user_password, its create-database-user hook.
+    Requires create_compute for the platform role.
+  EOT
+  type        = bool
+  default     = false
+}
+
+variable "rds_manage_master_user_password" {
+  description = <<-EOT
+    Whether RDS generates the master password and keeps it in Secrets Manager,
+    instead of Terraform generating it into state. postgres_password is then
+    null and the credentials are in the postgres_master_user_secret_arn secret.
+
+    Turning this on for an existing instance replaces its master password.
+  EOT
+  type        = bool
+  default     = false
+}
+
+variable "rds_master_user_secret_kms_key_id" {
+  description = "KMS key ID or ARN for the RDS-managed master user secret. Null uses the account's aws/secretsmanager key."
+  type        = string
+  default     = null
+}
+
 variable "alarm_sns_topic_arns" {
   description = "SNS topic ARNs notified by the RDS CloudWatch alarms. Leaving this empty creates no alarms."
   type        = list(string)

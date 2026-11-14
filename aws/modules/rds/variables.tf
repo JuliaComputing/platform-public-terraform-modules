@@ -39,6 +39,49 @@ variable "database_name" {
   default     = ""
 }
 
+variable "manage_master_user_password" {
+  description = <<-EOT
+    Whether RDS generates the master password and keeps it in Secrets Manager,
+    rotating it on the secret's schedule, instead of this module generating it
+    into Terraform state. The password and connection_string outputs are then
+    null; the credentials are in the master_user_secret_arn secret.
+
+    Turning this on for an existing instance replaces its master password.
+  EOT
+  type        = bool
+  default     = false
+}
+
+variable "master_user_secret_kms_key_id" {
+  description = "KMS key ID or ARN to encrypt the RDS-managed master user secret with. Null uses the account's aws/secretsmanager key."
+  type        = string
+  default     = null
+}
+
+variable "iam_database_authentication_enabled" {
+  description = <<-EOT
+    Whether to enable RDS IAM database authentication, so the platform connects
+    with short-lived IAM tokens instead of a password. The master user keeps its
+    password either way; the platform connects as iam_db_username and its
+    bootstrap Job as iam_admin_db_username, roles the chart's
+    create-database-user hook creates.
+  EOT
+  type        = bool
+  default     = false
+}
+
+variable "iam_db_username" {
+  description = "Database role the platform services connect as with IAM authentication. Maps to postgres.external.username with postgres.external.auth set to iam."
+  type        = string
+  default     = "juliahub_iam"
+}
+
+variable "iam_admin_db_username" {
+  description = "Database role the platform's bootstrap Job connects as with IAM authentication; it owns the databases and runs the migrations. Maps to postgres.external.iam.adminUsername."
+  type        = string
+  default     = "juliahub_admin_iam"
+}
+
 variable "subnet_ids" {
   description = "Subnet IDs for the DB subnet group. Use private subnets. Leaving this empty places the instance in the account's default VPC, which is not recommended."
   type        = list(string)
