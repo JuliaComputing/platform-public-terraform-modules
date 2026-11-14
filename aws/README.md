@@ -85,6 +85,21 @@ After `terraform apply`, these outputs populate a `myvalues.yaml`:
 | `job_log_group_name` | `compute.joblogs.groupName`, `logging-fluentbit.logGroupName` |
 | `job_log_archive_bucket_name` | `compute.joblogs.archive.bucket` |
 
+### IAM database authentication
+
+With `rds_iam_database_authentication_enabled = true` the platform connects to RDS with short-lived IAM tokens instead of a password. `postgres_username` is then the IAM database role and `postgres_password` is null. Set `rds_manage_master_user_password = true` as well to keep the master password out of Terraform state: RDS keeps it in Secrets Manager, and only the chart's `create-database-user` hook can read it. The platform service account role gets `rds-db:connect`, and is explicitly denied the master user secret, which its Secrets Manager policy would otherwise cover.
+
+| Output | Helm value |
+|--------|-----------|
+| `postgres_auth` | `postgres.external.auth` |
+| `region` (your `region` input) | `postgres.external.iam.region` |
+| `postgres_iam_admin_username` | `postgres.external.iam.adminUsername` |
+| `postgres_master_user_secret_arn` | `postgres.external.iam.masterUserSecretArn` |
+| `postgres_iam_bootstrap_role_arn` | `postgres.external.iam.bootstrapServiceAccountAnnotations["eks.amazonaws.com/role-arn"]` |
+| `postgres_iam_provisioner_role_arn` | `postgres.external.iam.provisionerServiceAccountAnnotations["eks.amazonaws.com/role-arn"]` |
+
+These need a platform chart version that supports `postgres.external.auth: iam`.
+
 The job log outputs are null when `create_logging = false`. Without `compute.joblogs.archive.bucket` the platform never exports job logs to the archive bucket, so a job's logs are gone once the log group's retention (`job_log_retention_days`, 7 by default) has passed. Chart versions that predate the value ignore it.
 
 Controller outputs go to their own Helm charts rather than the platform chart:
@@ -458,6 +473,7 @@ If your account's compliance automation reads tags off each instance — a patch
 | [modules/vpc](modules/vpc/) | VPC, subnets, routing, NAT gateways, VPC endpoints |
 | [modules/eks](modules/eks/) | EKS cluster, node group, addons, IAM roles, access entries |
 | [modules/rds](modules/rds/) | PostgreSQL RDS instance, parameter group, optional alarms |
+| [modules/rds-iam](modules/rds-iam/) | IRSA roles for RDS IAM database authentication |
 | [modules/efs](modules/efs/) | EFS filesystem, access point, and mount targets for one shared directory |
 | [modules/karpenter](modules/karpenter/) | Karpenter IAM roles, instance profile, interruption queue |
 | [modules/alb-controller](modules/alb-controller/) | IRSA role for the AWS Load Balancer Controller |

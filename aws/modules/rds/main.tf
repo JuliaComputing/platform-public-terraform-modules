@@ -1,6 +1,7 @@
 locals {
   parameter_group_family  = var.parameter_group_family == "" ? "postgres${var.postgresql_version}" : var.parameter_group_family
   restoring_from_snapshot = var.snapshot_identifier != ""
+  generate_password       = !local.restoring_from_snapshot && !var.manage_master_user_password
   create_monitoring_role  = var.monitoring_interval > 0 && var.monitoring_role_arn == ""
   monitoring_enabled      = var.monitoring_interval > 0
 
@@ -10,7 +11,7 @@ locals {
 }
 
 resource "random_password" "master" {
-  count = local.restoring_from_snapshot ? 0 : 1
+  count = local.generate_password ? 1 : 0
 
   length  = 32
   special = false # avoids URI-escaping problems in connection strings
@@ -161,8 +162,13 @@ resource "aws_db_instance" "_" {
   engine_version    = local.restoring_from_snapshot ? null : var.postgresql_version
   allocated_storage = local.restoring_from_snapshot ? null : var.allocated_storage
   username          = local.restoring_from_snapshot ? null : var.username
-  password          = local.restoring_from_snapshot ? null : random_password.master[0].result
+  password          = local.generate_password ? random_password.master[0].result : null
   db_name           = local.restoring_from_snapshot || var.database_name == "" ? null : var.database_name
+
+  manage_master_user_password   = var.manage_master_user_password ? true : null
+  master_user_secret_kms_key_id = var.manage_master_user_password ? var.master_user_secret_kms_key_id : null
+
+  iam_database_authentication_enabled = var.iam_database_authentication_enabled
 
   instance_class        = var.instance_class
   max_allocated_storage = var.max_allocated_storage

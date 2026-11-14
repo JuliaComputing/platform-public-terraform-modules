@@ -10,6 +10,8 @@ Creates a PostgreSQL RDS instance for the JuliaHub Platform's external database.
 - **Enhanced monitoring and Performance Insights**, with the monitoring IAM role created automatically
 - **Optional CloudWatch alarms** for CPU, freeable memory, and free storage
 - **Snapshot restore** via `snapshot_identifier`
+- **Optional IAM database authentication** with scoped `rds-db:connect` policy outputs
+- **Optional RDS-managed master password** kept in Secrets Manager instead of Terraform state
 
 ## Usage
 
@@ -62,6 +64,21 @@ The generated password excludes special characters, so it can be embedded in a c
 
 When restoring from a snapshot, credentials come from the snapshot; `password` and `connection_string` are then `null`.
 
+To keep the master password out of Terraform state, set `manage_master_user_password = true`. RDS then generates it and keeps it in a Secrets Manager secret (`master_user_secret_arn`), encrypted with `master_user_secret_kms_key_id` or the account's `aws/secretsmanager` key, and `password` and `connection_string` are `null`. Turning this on for an existing instance replaces its master password, so anything still using the old one stops working.
+
+## IAM database authentication
+
+With `iam_database_authentication_enabled = true` the platform connects with short-lived IAM tokens instead of a password (the chart's `postgres.external.auth: iam`). The master user keeps its password; the platform uses two database roles, which the chart's `create-database-user` hook creates with the master credentials:
+
+| Role | Variable | Used by | Policy output |
+|------|----------|---------|---------------|
+| `juliahub_iam` | `iam_db_username` | Platform services | `iam_connect_policy_json` |
+| `juliahub_admin_iam` | `iam_admin_db_username` | Bootstrap Job (owns the databases, runs migrations) | `iam_admin_connect_policy_json` |
+
+Attach each policy only to the IAM role of the workload that connects as that role. With `manage_master_user_password`, `master_user_secret_read_policy_json` grants read access to the master user secret; attach it only to the `create-database-user` hook's role. The [`rds-iam`](../rds-iam/) module creates those roles.
+
+A token is checked only when a connection is opened, so pooled connections stay open after the token expires.
+
 ## Upgrades
 
 `allow_major_version_upgrade` defaults to `true`, but a major version change still only happens when you change `postgresql_version` and apply.
@@ -96,3 +113,9 @@ See [`variables.tf`](variables.tf) for the full list with descriptions and defau
 | `engine_version` | Running engine version |
 | `security_group_id` | Security group controlling access |
 | `connection_string` | Full connection URI (sensitive) |
+| `resource_id` | Instance resource ID, used in `rds-db:connect` ARNs |
+| `master_user_secret_arn` | RDS-managed master user secret, if `manage_master_user_password` |
+| `master_user_secret_read_policy_json` | Policy to read that secret |
+| `iam_database_authentication_enabled` | Whether IAM authentication is enabled |
+| `iam_db_username` / `iam_admin_db_username` | IAM database roles |
+| `iam_connect_policy_json` / `iam_admin_connect_policy_json` | `rds-db:connect` policies for those roles |

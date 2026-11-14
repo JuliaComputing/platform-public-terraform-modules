@@ -150,14 +150,44 @@ output "postgres_port" {
 }
 
 output "postgres_username" {
-  description = "RDS master username, or null when create_rds is false"
-  value       = one(module.rds[*].username)
+  description = "Username the platform connects as, or null when create_rds is false: the master username, or with rds_iam_database_authentication_enabled the IAM database role"
+  value       = var.rds_iam_database_authentication_enabled ? one(module.rds[*].iam_db_username) : one(module.rds[*].username)
 }
 
 output "postgres_password" {
-  description = "Generated RDS master password, or null when create_rds is false"
-  value       = one(module.rds[*].password)
+  description = "Generated RDS master password, or null when create_rds is false, with rds_iam_database_authentication_enabled (the platform needs no password) or with rds_manage_master_user_password"
+  value       = var.rds_iam_database_authentication_enabled ? null : one(module.rds[*].password)
   sensitive   = true
+}
+
+output "postgres_master_username" {
+  description = "RDS master username, or null when create_rds is false. For administration only; with IAM authentication the platform does not use it."
+  value       = one(module.rds[*].username)
+}
+
+output "postgres_auth" {
+  description = "How the platform authenticates to RDS: password or iam. Maps to postgres.external.auth."
+  value       = var.rds_iam_database_authentication_enabled ? "iam" : "password"
+}
+
+output "postgres_iam_admin_username" {
+  description = "Database role the bootstrap Job connects as with IAM authentication, or null without it. Maps to postgres.external.iam.adminUsername."
+  value       = var.rds_iam_database_authentication_enabled ? one(module.rds[*].iam_admin_db_username) : null
+}
+
+output "postgres_master_user_secret_arn" {
+  description = "ARN of the Secrets Manager secret with the RDS-managed master credentials, or null without rds_manage_master_user_password. Maps to postgres.external.iam.masterUserSecretArn."
+  value       = one(module.rds[*].master_user_secret_arn)
+}
+
+output "postgres_iam_bootstrap_role_arn" {
+  description = "IRSA role ARN for the bootstrap Job, or null without IAM authentication. Maps to postgres.external.iam.bootstrapServiceAccountAnnotations[\"eks.amazonaws.com/role-arn\"]."
+  value       = one(module.rds_iam[*].bootstrap_role_arn)
+}
+
+output "postgres_iam_provisioner_role_arn" {
+  description = "IRSA role ARN for the create-database-user hook, or null without IAM authentication and rds_manage_master_user_password. Maps to postgres.external.iam.provisionerServiceAccountAnnotations[\"eks.amazonaws.com/role-arn\"]."
+  value       = one(module.rds_iam[*].provisioner_role_arn)
 }
 
 # Compute outputs

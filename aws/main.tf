@@ -144,7 +144,37 @@ module "rds" {
   skip_final_snapshot     = var.rds_skip_final_snapshot
   snapshot_identifier     = var.rds_snapshot_identifier
 
+  iam_database_authentication_enabled = var.rds_iam_database_authentication_enabled
+  manage_master_user_password         = var.rds_manage_master_user_password
+  master_user_secret_kms_key_id       = var.rds_master_user_secret_kms_key_id
+
   alarm_sns_topic_arns = var.alarm_sns_topic_arns
+
+  permissions_boundary_arn = var.permissions_boundary_arn
+  tags                     = local.common_tags
+}
+
+module "rds_iam" {
+  source = "./modules/rds-iam"
+  count  = var.create_rds && var.rds_iam_database_authentication_enabled ? 1 : 0
+
+  name         = module.rds[0].identifier
+  cluster_name = module.eks.cluster_name
+  # The cluster is created in the same apply, so a data lookup would fail at
+  # plan time.
+  lookup_cluster = false
+  oidc_provider  = module.eks.oidc_provider
+  namespace      = var.service_account_namespace
+
+  iam_connect_policy_json       = module.rds[0].iam_connect_policy_json
+  iam_admin_connect_policy_json = module.rds[0].iam_admin_connect_policy_json
+
+  attach_to_platform_role = var.create_compute
+  platform_role_name      = one(module.compute[*].service_account_role_name)
+
+  manage_master_user_password         = var.rds_manage_master_user_password
+  master_user_secret_arn              = module.rds[0].master_user_secret_arn
+  master_user_secret_read_policy_json = module.rds[0].master_user_secret_read_policy_json
 
   permissions_boundary_arn = var.permissions_boundary_arn
   tags                     = local.common_tags
