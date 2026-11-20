@@ -634,10 +634,16 @@ variable "rds_iam_database_authentication_enabled" {
     authentication on the instance, grants the platform service account role
     rds-db:connect, and creates IRSA roles for the chart's bootstrap Job and,
     with rds_manage_master_user_password, its create-database-user hook.
-    Requires create_compute for the platform role.
+    Requires create_compute for the platform role, and a platform chart that
+    supports postgres.external.auth: iam.
+
+    On by default. Set false to keep password authentication, e.g. for an
+    existing install whose chart is still configured with
+    postgres.external.password: with it on, postgres_username becomes the IAM
+    database role and postgres_password is null.
   EOT
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "rds_manage_master_user_password" {
@@ -646,10 +652,12 @@ variable "rds_manage_master_user_password" {
     instead of Terraform generating it into state. postgres_password is then
     null and the credentials are in the postgres_master_user_secret_arn secret.
 
-    Turning this on for an existing instance replaces its master password.
+    On by default. Turning this on for an existing instance replaces its master
+    password, so an install created before this default changed should set it
+    false unless it means to rotate the master password into Secrets Manager.
   EOT
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "rds_master_user_secret_kms_key_id" {

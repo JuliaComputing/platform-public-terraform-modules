@@ -87,7 +87,7 @@ After `terraform apply`, these outputs populate a `myvalues.yaml`:
 
 ### IAM database authentication
 
-With `rds_iam_database_authentication_enabled = true` the platform connects to RDS with short-lived IAM tokens instead of a password. `postgres_username` is then the IAM database role and `postgres_password` is null. Set `rds_manage_master_user_password = true` as well to keep the master password out of Terraform state: RDS keeps it in Secrets Manager, and only the chart's `create-database-user` hook can read it. The platform service account role gets `rds-db:connect`, and is explicitly denied the master user secret, which its Secrets Manager policy would otherwise cover.
+By default the platform connects to RDS with short-lived IAM tokens instead of a password (`rds_iam_database_authentication_enabled = true`), so `postgres_username` is the IAM database role and `postgres_password` is null. The master password stays out of Terraform state as well (`rds_manage_master_user_password = true`): RDS keeps it in Secrets Manager, and only the chart's `create-database-user` hook can read it. The platform service account role gets `rds-db:connect`, and is explicitly denied the master user secret, which its Secrets Manager policy would otherwise cover.
 
 | Output | Helm value |
 |--------|-----------|
@@ -98,7 +98,9 @@ With `rds_iam_database_authentication_enabled = true` the platform connects to R
 | `postgres_iam_bootstrap_role_arn` | `postgres.external.iam.bootstrapServiceAccountAnnotations["eks.amazonaws.com/role-arn"]` |
 | `postgres_iam_provisioner_role_arn` | `postgres.external.iam.provisionerServiceAccountAnnotations["eks.amazonaws.com/role-arn"]` |
 
-These need a platform chart version that supports `postgres.external.auth: iam`.
+These need a platform chart version that supports `postgres.external.auth: iam`. With an older chart, set both variables to `false` and use `postgres_username` and `postgres_password` as in the table above.
+
+**Existing installs:** these defaults changed from `false` to `true`. An install created before the change that applies without setting them gets IAM authentication turned on, a new RDS-managed master password (the old one stops working), and `postgres_username`/`postgres_password` outputs that no longer suit a password-mode chart. To keep password authentication, set both to `false` before applying. To move to IAM authentication, switch the chart to `postgres.external.auth: iam` with the outputs above in the same rollout.
 
 The job log outputs are null when `create_logging = false`. Without `compute.joblogs.archive.bucket` the platform never exports job logs to the archive bucket, so a job's logs are gone once the log group's retention (`job_log_retention_days`, 7 by default) has passed. Chart versions that predate the value ignore it.
 
